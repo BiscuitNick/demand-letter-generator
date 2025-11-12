@@ -77,7 +77,7 @@ export function Header({ user, onSignOut }: HeaderProps) {
               <NavigationMenuList>
                 {navigationLinks.map((link) => (
                   <NavigationMenuItem key={link.href}>
-                    <Link href={link.href} legacyBehavior passHref>
+                    <Link href={link.href}>
                       <NavigationMenuLink
                         className={cn(
                           navigationMenuTriggerStyle(),
