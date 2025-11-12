@@ -40,3 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# Firebase Admin Service Account
+demand-letter-firebase-*.json
+firebase-admin-key.json
