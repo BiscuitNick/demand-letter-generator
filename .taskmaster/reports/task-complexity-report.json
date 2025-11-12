@@ -1,0 +1,93 @@
+{
+	"meta": {
+		"generatedAt": "2025-11-12T05:05:28.747Z",
+		"tasksAnalyzed": 10,
+		"totalTasks": 10,
+		"analysisCount": 10,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": false
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 1,
+			"taskTitle": "Bootstrap Next.js 14 + shadcn/ui foundation",
+			"complexityScore": 5,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break this task into steps covering: (1) scaffolding the Next.js 14 App Router project with pnpm and Turbopack, (2) configuring Tailwind/shadcn themes plus base globals, (3) wiring ThemeProvider/TooltipProvider/Toaster into app/layout.tsx, (4) generating shared UI atoms and placeholder dashboard/documents routes, (5) setting up path aliases, lint, and formatting rules with basic smoke tests.",
+			"reasoning": "Repo currently only contains documentation files (`rg --files`), so the entire Next.js + Tailwind + shadcn foundation must be created from scratch. Still, the work follows well-documented bootstrap steps with limited domain logic, making it a moderate effort focused on setup, theming, and basic routing."
+		},
+		{
+			"taskId": 2,
+			"taskTitle": "Firebase project wiring (Auth, Firestore, Storage)",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Detail subtasks for installing Firebase client/admin deps, configuring environment secrets, implementing client and admin singletons, adding auth/session helpers for App Router handlers, defining typed Firestore converters, and creating sanity tests or emulator checks.",
+			"reasoning": "No Firebase code exists yet, so both client and admin SDK layers, secure env handling, and session utilities must be authored from scratch and integrated with Next.js server actions. Handling emulator/test coverage plus future auth consumers increases effort beyond straightforward config."
+		},
+		{
+			"taskId": 3,
+			"taskTitle": "Secure multi-file upload pipeline",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Create subtasks for building the drag-and-drop UI (react-dropzone + shadcn card), client upload queue/progress logic, `/api/upload` route with auth verification, Firebase Storage streaming/resumable handling, persistence of metadata under documents/{docId}/sources, and validation plus antivirus hook & tests.",
+			"reasoning": "With no frontend or API surface yet, this requires net-new UX, client state management, secure server route, and Storage integration including validation and metadata writes. Coordinating auth, chunking, and progress tracking while stubbing antivirus hooks adds notable complexity."
+		},
+		{
+			"taskId": 4,
+			"taskTitle": "AI orchestration service (`/api/generate`)",
+			"complexityScore": 9,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Outline subtasks that cover designing the pipeline module (extract/outline/compose orchestration and template loading), integrating @vercel/ai + LangChain chunking utilities, implementing the `/api/generate` handler with streaming responses and progress events, persisting intermediate artifacts to Firestore, handling error/retry logic, and writing contract + mock-based tests.",
+			"reasoning": "This is a high-risk greenfield service: no AI plumbing exists, yet it must coordinate multiple model calls, templating, streaming updates, and Firestore persistence while meeting performance goals. Mocking GPT-4o interactions and ensuring resumable state transitions further raise complexity."
+		},
+		{
+			"taskId": 5,
+			"taskTitle": "Fact review and workflow UI",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Decompose into subtasks for defining Firestore-powered data hooks, building the multi-step Tabs/Stepper shell, implementing each step component (Upload, Facts editor with react-hook-form, Outline board with dnd-kit, Draft display), wiring CTA actions to `/api/generate`, and adding optimistic updates/error handling with tests.",
+			"reasoning": "A comprehensive workflow UI must be created without existing components or Firestore bindings, requiring coordinated state management, drag-and-drop interactions, and integration with backend generation endpoints plus optimistic persistence and validation flows."
+		},
+		{
+			"taskId": 6,
+			"taskTitle": "Collaborative rich-text editor with CRDT sync",
+			"complexityScore": 9,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Plan subtasks for selecting/configuring Tiptap + Y.js, implementing the Firestore/Y.js provider bridge, building the editor toolbar + presence indicators, handling auto-save snapshots and debounced persistence, ensuring permission checks/hooks, and creating multi-client sync plus timer-based tests.",
+			"reasoning": "Implementing a Y.js-backed Tiptap editor with Firestore sync, presence, formatting UI, and autosave is highly complex; nothing similar exists yet, so real-time CRDT wiring, performance tuning, and resilience to conflicts must be designed from scratch."
+		},
+		{
+			"taskId": 7,
+			"taskTitle": "Inline comments & sidebar discussions",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Generate subtasks covering comment data model & security rules integration, editor plugin/decorations for anchors, sidebar thread UI with resolve/reply controls, Firestore listeners for live updates and permissions, syncing unresolved counts/presence, and automated/UI tests.",
+			"reasoning": "Anchored comments require deep editor integration (decorations, selection capture) plus real-time Firestore data handling and permission enforcement. Because no editor foundation exists yet, this work closely couples with CRDT state and adds real-time collaboration considerations."
+		},
+		{
+			"taskId": 8,
+			"taskTitle": "Template, tone presets, and refinement requests",
+			"complexityScore": 6,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down into subtasks for templates CRUD UI (list, create/edit dialogs), Firestore data/service layer, document view controls for tone presets + custom instructions, `/api/refine` implementation integrating GPT-4o and merging diffs, and associated client/server tests.",
+			"reasoning": "While this touches both UI and AI, it leverages patterns similar to other planned APIs. Still, it requires building CRUD flows, state synchronization, and a new AI endpoint; absence of reusable infrastructure bumps complexity above baseline but below orchestration-level tasks."
+		},
+		{
+			"taskId": 9,
+			"taskTitle": "Export service for DOCX/PDF/TXT",
+			"complexityScore": 7,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "List subtasks for building ProseMirror JSON → HTML/Plaintext serializers, implementing DOCX/PDF renderers, creating the `/api/export` route with content negotiation & headers, integrating client download buttons/toasts, handling large-document streaming/perf, and adding serializer/API tests.",
+			"reasoning": "No serialization utilities exist, so document conversion to three formats plus binary streaming responses must be built anew. Ensuring fidelity from collaborative editor data and covering various export paths introduces significant but tractable complexity."
+		},
+		{
+			"taskId": 10,
+			"taskTitle": "Document cloning, versioning, and reliability safeguards",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Create subtasks that address schema updates for version/history, `/api/clone` route duplicating docs/storage refs, diff-summary logging, autosave hook/service enforcing 5s cadence with status badges, cleanup/cron for orphaned uploads, and emulator/Jest/Cypress coverage.",
+			"reasoning": "Implementing cloning and version history touches data modeling, storage duplication, autosave reliability guarantees, and background cleanup processes. Coordinating these cross-cutting concerns with Firestore and Storage while ensuring no regressions elevates the effort considerably."
+		}
+	]
+}

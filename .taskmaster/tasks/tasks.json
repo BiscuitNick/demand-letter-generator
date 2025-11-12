@@ -1,0 +1,799 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Bootstrap Next.js 14 + shadcn/ui foundation",
+        "description": "Set up the App Router project with TypeScript, Tailwind CSS, shadcn/ui, lucide-react, and base layout scaffolding for the demand-letter workflow.",
+        "details": "- Run `pnpm create next-app demand-letter-generator --ts --app --tailwind --eslint` and enable Turbopack.\n- Install `shadcn/ui`, configure `tailwind.config.ts` themes, add `ThemeProvider`, `TooltipProvider`, `Toaster` wrappers in `app/layout.tsx`.\n- Add shared UI atoms (Button, Input, Tabs, Card) and skeleton pages (`/dashboard`, `/documents/[id]`).\nPseudo-code:\n```\n// app/layout.tsx\nreturn (\n  <html>\n    <body className=\"font-sans min-h-screen\">\n      <ThemeProvider>\n        <TooltipProvider>\n          <Toaster />\n          {children}\n        </TooltipProvider>\n      </ThemeProvider>\n    </body>\n  </html>\n)\n```\n- Configure absolute imports (`tsconfig.json` paths) and lint/prettier rules for consistent formatting.",
+        "testStrategy": "- Run `pnpm lint` to validate TypeScript + ESLint config.\n- Snapshot-test the root layout to ensure providers render.\n- Playwright smoke test verifying `/` renders placeholder dashboard.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Scaffold Next.js 14 App Router project",
+            "description": "Use pnpm to generate the TypeScript App Router project with Tailwind, ESLint, and Turbopack enabled.",
+            "dependencies": [],
+            "details": "Run `pnpm create next-app demand-letter-generator --ts --app --tailwind --eslint` inside repo root, enable Turbopack, confirm dev server boots.",
+            "status": "done",
+            "testStrategy": "Run `pnpm dev` and ensure the default Next.js page renders without errors."
+          },
+          {
+            "id": 2,
+            "title": "Configure Tailwind, shadcn/ui, and global styles",
+            "description": "Install shadcn/ui, update Tailwind config themes, and ensure globals.css provides base tokens.",
+            "dependencies": [
+              1
+            ],
+            "details": "Install shadcn/ui CLI, add required packages, extend `tailwind.config.ts` with brand colors/fonts, run `pnpm shadcn init`, and update `globals.css` with font imports plus CSS variables.",
+            "status": "done",
+            "testStrategy": "Execute `pnpm tailwindcss --help` to verify tooling, then run `pnpm lint` to ensure Tailwind config compiles."
+          },
+          {
+            "id": 3,
+            "title": "Wire ThemeProvider, TooltipProvider, and Toaster in layout",
+            "description": "Update `app/layout.tsx` to wrap children with Theme, Tooltip, and Toast providers according to shadcn guidelines.",
+            "dependencies": [
+              2
+            ],
+            "details": "Add provider components exported from `components/theme-provider.tsx`, import `TooltipProvider` and `Toaster`, update body classes, and verify metadata exports remain intact.",
+            "status": "done",
+            "testStrategy": "Add a lightweight React Testing Library snapshot for `app/layout.tsx` ensuring providers render around `children`."
+          },
+          {
+            "id": 4,
+            "title": "Generate shared UI atoms and placeholder routes",
+            "description": "Use shadcn to add Button/Input/Tabs/Card and scaffold `/dashboard` plus `/documents/[id]` pages with placeholder content.",
+            "dependencies": [
+              3
+            ],
+            "details": "Run `pnpm shadcn add button input tabs card`, export components via `components/ui`, add `app/dashboard/page.tsx` and `app/documents/[id]/page.tsx` with stub content referencing new atoms.",
+            "status": "done",
+            "testStrategy": "Create Playwright or Cypress smoke test hitting `/dashboard` and `/documents/test-doc` to ensure pages render without crashing."
+          },
+          {
+            "id": 5,
+            "title": "Configure path aliases, lint settings, and formatting checks",
+            "description": "Update `tsconfig.json` paths, ensure ESLint/Prettier configs cover the new structure, and add smoke tests for layout.",
+            "dependencies": [
+              4
+            ],
+            "details": "Add `@/*` and `@/components/*` aliases, tweak ESLint extends/plugins, add Prettier config if missing, and script `pnpm lint && pnpm test` for smoke coverage.",
+            "status": "done",
+            "testStrategy": "Run `pnpm lint` plus `pnpm test` (or `pnpm vitest`) to confirm configs compile and layout snapshot passes."
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Firebase project wiring (Auth, Firestore, Storage)",
+        "description": "Integrate Firebase client and admin SDKs for auth, Firestore, and Storage with secure server-side helpers and client hooks.",
+        "details": "- Add `firebase/app`, `firebase/auth`, `firebase/firestore`, `firebase/storage`, and `firebase-admin` (for server routes).\n- Create `lib/firebase-client.ts` (singleton) and `lib/firebase-admin.ts` (lazy init with service account from env + `GOOGLE_APPLICATION_CREDENTIALS`).\n- Implement helpers `getUserSession()`, `withUserClaims(handler)` to wrap Next.js server actions/API routes.\nPseudo-code:\n```\n// lib/firebase-client.ts\nlet app = getApps().length ? getApp() : initializeApp(firebaseConfig)\nexport const auth = getAuth(app)\nexport const db = getFirestore(app)\nexport const storage = getStorage(app)\n```\n- Define Firestore converters for `Document`, `Comment`, `Template` types matching PRD schema.\n- Set up Firebase Auth providers (Google, Email) via `next-auth` style route or FirebaseUI component.\n",
+        "testStrategy": "- Write unit tests for helper modules ensuring singleton behavior.\n- Integration test hitting a dummy API route that reads/writes Firestore emulator data.\n- Manual QA: log in with Firebase emulator UI to ensure sessions populate client context.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Install Firebase client/admin dependencies",
+            "description": "Add the required Firebase client and admin SDK packages to the Next.js workspace and ensure package manager locks are updated.",
+            "dependencies": [],
+            "details": "Use the project package manager to install firebase/app, firebase/auth, firebase/firestore, firebase/storage, and firebase-admin so both client and server code can import typed SDKs without runtime mismatches.",
+            "status": "done",
+            "testStrategy": "Verify packages resolve by running the type checker or a simple build after install."
+          },
+          {
+            "id": 2,
+            "title": "Configure Firebase environment secrets",
+            "description": "Set up environment variables and credential files so both client config and admin service account data are securely loaded at runtime.",
+            "dependencies": [
+              1
+            ],
+            "details": "Document required env keys (API key, project ID, storage bucket, etc.), add GOOGLE_APPLICATION_CREDENTIALS pointing to the service account JSON, and ensure server-only values stay in .env.local or secure secret storage.",
+            "status": "done",
+            "testStrategy": "Run `pnpm lint` or a minimal server start to confirm env vars resolve; optionally add a script that asserts required vars exist."
+          },
+          {
+            "id": 3,
+            "title": "Create firebase client singleton module",
+            "description": "Implement lib/firebase-client.ts that initializes the Firebase client app once and exports typed auth, Firestore, and Storage instances for React hooks.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Follow the getApps/getApp guard pattern to initialize the client using firebaseConfig from env, export singleton auth/db/storage, and add comments describing how to extend with hooks later.",
+            "status": "done",
+            "testStrategy": "Write a small unit test mocking firebase/app to ensure initializeApp runs only once and exports memoized instances."
+          },
+          {
+            "id": 4,
+            "title": "Implement firebase admin initializer",
+            "description": "Add lib/firebase-admin.ts with lazy initialization using service account credentials and guard it from running in the browser.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Use firebase-admin/app initializeApp with credential cert loaded from GOOGLE_APPLICATION_CREDENTIALS or inline env JSON, export auth/firestore/storage admin handles, and ensure multiple imports reuse the same admin app.",
+            "status": "done",
+            "testStrategy": "Unit test the module with mocked env vars to ensure it throws when creds are missing and reuses the existing admin app on subsequent calls."
+          },
+          {
+            "id": 5,
+            "title": "Build auth/session helper utilities",
+            "description": "Create server-side helpers such as getUserSession and withUserClaims that rely on the admin SDK to verify tokens inside Next.js App Router handlers and server actions.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Implement token parsing from cookies/headers, verify via admin auth, return typed session objects, and expose a higher-order handler wrapper that injects user claims or rejects unauthorized access.",
+            "status": "done",
+            "testStrategy": "Add unit tests covering valid token, missing token, and revoked token paths using mocked admin auth responses; consider an integration test around a mock route handler."
+          },
+          {
+            "id": 6,
+            "title": "Define Firestore converters and emulator sanity checks",
+            "description": "Create strongly typed Firestore data converters for Document, Comment, and Template schemas plus basic emulator tests to validate read/write flows.",
+            "dependencies": [
+              3,
+              4,
+              5
+            ],
+            "details": "Implement converter objects mapping to PRD schema, wire them into helper exports, and script a small emulator-driven test or Jest suite hitting a dummy API route to confirm converters work end-to-end.",
+            "status": "done",
+            "testStrategy": "Run Firestore emulator tests that write sample docs via converters, read them back, and assert shape/type fidelity; include manual instructions for running the emulator if automation is blocked."
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Secure multi-file upload pipeline",
+        "description": "Build drag-and-drop uploader, `/api/upload` route, and Firebase Storage persistence for PDF/DOCX/TXT inputs.",
+        "details": "- Frontend: use `react-dropzone` + shadcn `Card` to queue files, show progress, restrict MIME types, chunk large files.\n- API Route `/api/upload` validates Firebase ID token, streams files to Storage with resumable uploads, returns signed URLs + metadata.\nPseudo-code:\n```\n// app/api/upload/route.ts\nexport async function POST(req: NextRequest) {\n  const user = await requireAuth(req)\n  const form = await req.formData()\n  for (const file of form.getAll('files')) {\n     const bucketFile = storage.bucket().file(`${user.uid}/${nanoid()}`)\n     await bucketFile.save(Buffer.from(await file.arrayBuffer()))\n  }\n  return NextResponse.json({ urls })\n}\n```\n- Persist upload metadata to `/documents/{docId}/sources` subcollection for orchestration.\n- Enforce max file size and antivirus placeholder hook.\n",
+        "testStrategy": "- API route unit tests via Supertest mocking Firebase Storage.\n- Cypress test uploading sample PDF/TXT ensuring progress + success states.\n- Verify rejected files (size/type) display shadcn `Alert` component.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement drag-and-drop uploader UI",
+            "description": "Create a shadcn Card housing a react-dropzone area that accepts PDF, DOCX, and TXT files with visual affordances.",
+            "dependencies": [],
+            "details": "Set up a dedicated DropZone component configured with accept MIME map, hover states, empty/filled variations, and helper text for size/type limits.",
+            "status": "done",
+            "testStrategy": "Storybook/RTL snapshot verifying DropZone renders in idle, hover, and file-selected states."
+          },
+          {
+            "id": 2,
+            "title": "Build client upload queue and progress management",
+            "description": "Layer upload queue state, per-file progress bars, chunking helpers, and error messaging on top of the drag-and-drop UI.",
+            "dependencies": [
+              1
+            ],
+            "details": "Add zustand/react context store tracking files, chunk offsets, resumable IDs, and expose hooks the Card uses to show progress, retry, and remove actions.",
+            "status": "done",
+            "testStrategy": "Unit test queue reducer/helpers; Cypress stubbed upload verifying progress bars and error toast for rejected file."
+          },
+          {
+            "id": 3,
+            "title": "Create `/api/upload` route with auth validation",
+            "description": "Implement Next.js route handler that enforces Firebase ID token verification before processing multipart uploads.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use `requireAuth`/`withUserClaims` to decode token, parse `req.formData()`, guard total payload size, and prepare structured response including signed URLs placeholder.",
+            "status": "done",
+            "testStrategy": "Supertest route spec covering unauthenticated 401, malformed form data, and happy-path stubbed storage write."
+          },
+          {
+            "id": 4,
+            "title": "Integrate Firebase Storage streaming and resumable uploads",
+            "description": "Within the upload route, stream each file to Firebase Storage using resumable/chunked uploads suitable for large documents.",
+            "dependencies": [
+              3
+            ],
+            "details": "Use `@google-cloud/storage` resumable APIs, chunk iterables from `file.stream()`, attach metadata (contentType, original name), and collect signed download URLs per file.",
+            "status": "done",
+            "testStrategy": "Mock Storage client to assert resumable upload invocation and that signed URLs are requested once per stored file."
+          },
+          {
+            "id": 5,
+            "title": "Persist upload metadata under `documents/{docId}/sources`",
+            "description": "After successful uploads, write per-file metadata records so downstream orchestration can discover sources.",
+            "dependencies": [
+              4
+            ],
+            "details": "Resolve `docId` from request context, generate source doc IDs, and store `{name,type,size,path,signedUrl,createdAt}` in the Firestore subcollection via batched writes.",
+            "status": "done",
+            "testStrategy": "Firestore emulator test ensuring documents are created with expected schema and linked to authenticated user docId."
+          },
+          {
+            "id": 6,
+            "title": "Enforce validation + antivirus hook and add tests",
+            "description": "Centralize MIME/size validation plus stub antivirus scanning hook spanning UI + API layers, and back it with automated tests.",
+            "dependencies": [
+              3,
+              4,
+              5
+            ],
+            "details": "Share allowlist constants, reject oversized files client/server with mirrored messages, add placeholder `scanFile(buffer)` hook, and document fallback flows for failed scans.",
+            "status": "done",
+            "testStrategy": "Jest unit tests for validator + antivirus hook plus Cypress flow confirming rejected files show shadcn Alert and server response is handled."
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "AI orchestration service (`/api/generate`)",
+        "description": "Implement Extractor → Outliner → Composer pipeline using `@vercel/ai` with GPT-4o, streaming intermediate artifacts to Firestore.",
+        "details": "- Create `lib/ai/pipeline.ts` orchestrating steps with structured prompts stored in `/templates`.\n- `/api/generate` accepts `{docId, steps, promptTemplateId}`; batches uploads, chunks text via `langchain` document loaders.\nPseudo-code:\n```\nfor (const step of steps) {\n  switch(step) {\n    case 'extract': facts = await extractor(files)\n    case 'outline': outline = await outliner(facts, template)\n    case 'compose': draft = await composer(outline, template)\n  }\n  await db.doc(`documents/${docId}`).set({ facts, outline, draft }, { merge: true })\n}\n```\n- Use streaming responses (`ReadableStream`) to push progress events to client via `Server-Sent Events` or `unstable_cache` revalidation tag.\n- Store artifacts in Firestore fields per PRD schema.\n",
+        "testStrategy": "- Mock OpenAI via `msw` to cover extract/outline/compose branches.\n- Contract tests ensuring Firestore writes include `facts`, `outline`, `draft` shapes.\n- Load test (k6) verifying <5s average response for typical payload (per non-functional requirement).",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design pipeline contracts and template loader",
+            "description": "Define the Extractor → Outliner → Composer pipeline contracts and load prompt templates from /templates.",
+            "dependencies": [],
+            "details": "Create lib/ai/pipeline.ts with TypeScript interfaces for each step, context payload shapes, and helper to fetch structured prompt templates from /templates for a given promptTemplateId.",
+            "status": "done",
+            "testStrategy": "Schema/unit tests asserting pipeline contracts require facts/outline/draft structures."
+          },
+          {
+            "id": 2,
+            "title": "Implement extractor, outliner, composer orchestrations",
+            "description": "Wire Extractor, Outliner, Composer functions that call @vercel/ai GPT-4o with structured prompts.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use the contracts to invoke @vercel/ai clients, build prompt payloads from templates, and return normalized artifacts (facts array, outline tree, draft text).",
+            "status": "done",
+            "testStrategy": "Mock @vercel/ai responses to ensure each function maps model output into normalized shapes."
+          },
+          {
+            "id": 3,
+            "title": "Integrate LangChain chunking and upload batching utilities",
+            "description": "Support chunking source documents and batching uploads before extraction runs.",
+            "dependencies": [
+              2
+            ],
+            "details": "Use LangChain document loaders to chunk uploaded files referenced by docId, ensuring extractor receives manageable batches and metadata for traceability.",
+            "status": "done",
+            "testStrategy": "Unit tests feeding sample files ensure chunk boundaries and batching metadata are correct."
+          },
+          {
+            "id": 4,
+            "title": "Persist intermediate artifacts to Firestore per PRD schema",
+            "description": "Write Firestore utility that merges facts, outline, draft into document records as steps complete.",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement helper that writes to documents/{docId} with merge:true, storing artifacts in expected fields and tagging updates for unstable_cache revalidation.",
+            "status": "done",
+            "testStrategy": "Firestore emulator tests verifying merges preserve prior fields and match schema keys."
+          },
+          {
+            "id": 5,
+            "title": "Build /api/generate streaming handler",
+            "description": "Create Next.js route handling POST {docId, steps, promptTemplateId} with streaming progress events.",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement ReadableStream/SSE response that iterates through requested steps, pipes pipeline outputs, and notifies client of progress chunks until completion.",
+            "status": "done",
+            "testStrategy": "Route-level tests confirming SSE events emit step start/finish messages and body closes cleanly."
+          },
+          {
+            "id": 6,
+            "title": "Implement error handling and retry/resume logic",
+            "description": "Add safeguards for AI call failures, timeouts, and resumable state updates.",
+            "dependencies": [
+              5
+            ],
+            "details": "Capture model errors, retry with backoff, persist failure reason in Firestore, and allow reruns to skip completed artifacts using stored state.",
+            "status": "done",
+            "testStrategy": "Simulated failure tests ensuring retries trigger and resume logic skips finished steps."
+          },
+          {
+            "id": 7,
+            "title": "Author contract and mock-based tests plus load test harness",
+            "description": "Cover pipeline/API with mocks plus Firestore contract and k6 perf tests.",
+            "dependencies": [
+              6
+            ],
+            "details": "Write msw-backed tests for extractor/outline/compose, Firestore contract tests for artifact shapes, and k6 script validating <5s average response.",
+            "status": "done",
+            "testStrategy": "Comprehensive Jest/MSW suites and k6 scenario verifying throughput and schema adherence."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Fact review and workflow UI",
+        "description": "Build multi-step UI (Upload → Facts → Outline → Draft) with optimistic updates, error surfaces, and ability to re-run steps selectively.",
+        "details": "- Use `Tabs` or `Stepper` component showing progress; each step binds to Firestore document snapshot via `useDocument` hook.\n- Facts step renders structured cards editable via `react-hook-form`; outline step allows drag reorder (e.g., `@dnd-kit`).\nPseudo-code:\n```\nconst { data: doc } = useDocument(docRef)\nreturn <Tabs value={activeStep}>\n  <TabsContent value=\"facts\"><FactsEditor data={doc.facts} /></TabsContent>\n  <TabsContent value=\"outline\"><OutlineBoard sections={doc.outline} /></TabsContent>\n</Tabs>\n```\n- Provide CTA buttons that call `/api/generate` with targeted `steps` array.\n- Persist manual edits back to Firestore with debounced writes.\n",
+        "testStrategy": "- React Testing Library tests for step navigation + Firestore update calls.\n- Storybook visual regression snapshots for each step state.\n- Cypress flow test: upload sample doc → view facts → regenerate outline.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Firestore workflow hooks",
+            "description": "Create reusable hooks to read and write workflow documents from Firestore using `useDocument` and debounced mutation helpers.",
+            "dependencies": [],
+            "details": "Define `useWorkflowDocument(docId)` returning snapshot data, loading/error state, and mutation helpers that perform optimistic updates with rollback on failure.",
+            "status": "done",
+            "testStrategy": "Unit test hook logic with mocked Firestore adapters to ensure optimistic updates and rollback paths."
+          },
+          {
+            "id": 2,
+            "title": "Build multi-step Tabs/Stepper shell",
+            "description": "Create the Upload → Facts → Outline → Draft navigation shell showing progress and step status.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use shadcn Tabs or Stepper to render four steps, binding current data and providing navigation controls tied to Firestore snapshot state.",
+            "status": "done",
+            "testStrategy": "React Testing Library coverage for step navigation, ensuring the active tab changes and data props flow correctly."
+          },
+          {
+            "id": 3,
+            "title": "Develop Upload step UI",
+            "description": "Implement the upload step panel that reflects upload status and previously stored files.",
+            "dependencies": [
+              2
+            ],
+            "details": "Integrate drag-and-drop uploader output into the workflow screen, showing current files, status chips, and manual re-upload controls using data from Firestore.",
+            "status": "done",
+            "testStrategy": "Storybook story for upload step states plus RTL test verifying stored files render and CTA buttons emit events."
+          },
+          {
+            "id": 4,
+            "title": "Implement Facts editor with react-hook-form",
+            "description": "Render structured fact cards with inline editing, validation, and debounced persistence.",
+            "dependencies": [
+              2,
+              3
+            ],
+            "details": "Bind form fields to the facts array, allow add/remove/mark actions, and sync edits through the Firestore mutation helpers with optimistic UI feedback.",
+            "status": "done",
+            "testStrategy": "Form interaction tests validating add/edit/delete flows update Firestore helper calls and show validation messages."
+          },
+          {
+            "id": 5,
+            "title": "Create Outline board with drag-and-drop",
+            "description": "Build the outline step using dnd-kit to reorder sections and edit titles/notes.",
+            "dependencies": [
+              2,
+              4
+            ],
+            "details": "Implement draggable list, reorder callbacks updating Firestore order, and inline editing fields echoed to outline data with undo-on-failure behavior.",
+            "status": "done",
+            "testStrategy": "RTL + @dnd-kit testing utilities to confirm drag events reorder state and Firestore updates fire with correct payloads."
+          },
+          {
+            "id": 6,
+            "title": "Implement Draft step, CTA actions, and error handling",
+            "description": "Display draft preview, wire CTA buttons to `/api/generate`, and add optimistic/error surfaces across steps.",
+            "dependencies": [
+              2,
+              4,
+              5
+            ],
+            "details": "Invoke `fetch('/api/generate')` with selected steps, show pending/success/error banners, allow selective re-run, and ensure optimistic writes roll back on API failure.",
+            "status": "done",
+            "testStrategy": "Cypress flow test covering selective step re-run plus RTL assertions for error surfaces and optimistic rollback behavior."
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Collaborative rich-text editor with CRDT sync",
+        "description": "Integrate Y.js-based editor (e.g., Tiptap + `y-prosemirror`) backed by Firestore awareness to enable Google Docs–style editing.",
+        "details": "- Initialize Y.Doc per document, sync via `y-firebase` provider mapping to `/documents/{docId}` content field.\n- Editor toolbar uses shadcn `Toggle`, `DropdownMenu`, `Separator` for bold/italic/lists.\nPseudo-code:\n```\nconst ydoc = useMemo(() => new Y.Doc(), [docId])\nuseEffect(() => new FirestoreProvider(ydoc, db.doc(`documents/${docId}`)), [docId])\nconst editor = useEditor({ extensions: [StarterKit, Placeholder], content: ydoc.getXmlFragment('content') })\n```\n- Implement presence indicators (avatars) via Firestore `collaborators` subcollection updated on focus.\n- Auto-save: commit snapshots every 5s and on blur.\n",
+        "testStrategy": "- Unit tests for CRDT provider wrapper (mock Y.Doc operations).\n- Multi-client Cypress test ensuring edits sync within <250ms.\n- Measure auto-save intervals via Jest fake timers.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Select and configure Tiptap + Y.js foundations",
+            "description": "Choose the Tiptap StarterKit + y-prosemirror/yjs extensions and scaffold a reusable editor config for CRDT collaboration.",
+            "dependencies": [],
+            "details": "Audit required Tiptap extensions (StarterKit, Placeholder, Collaboration, CollaborationCursor) and Y.js packages, install them, and define a configuration module exporting the base extension array and editor options keyed by docId.",
+            "status": "done",
+            "testStrategy": "Peer review of dependency list and config file for coverage of CRDT + formatting needs."
+          },
+          {
+            "id": 2,
+            "title": "Implement Y.Doc lifecycle hook for documents",
+            "description": "Create React hooks/utilities that memoize a Y.Doc per docId and clean up listeners on unmount to avoid memory leaks.",
+            "dependencies": [
+              1
+            ],
+            "details": "Build a `useYDoc(docId)` hook that instantiates Y.Doc in useMemo, registers beforeunload/visibility handlers, and tears down awareness + providers, ensuring deterministic doc reuse across re-renders.",
+            "status": "done",
+            "testStrategy": "Unit tests mocking Y.Doc verifying single instance per docId and cleanup callbacks firing on unmount."
+          },
+          {
+            "id": 3,
+            "title": "Create Firestore ↔ Y.js provider bridge",
+            "description": "Wrap y-firebase (or custom provider) to sync Y.Doc updates to `/documents/{docId}` and expose awareness APIs for collaborators.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement `useFirestoreProvider(ydoc, docId, db)` hook/class that connects to Firestore, maps updates to the `content` field, initializes awareness states, and handles reconnect/backoff plus error surfacing for permission failures.",
+            "status": "done",
+            "testStrategy": "Jest tests mocking Firestore SDK verifying updates trigger set/update calls and awareness payloads publish/subscribe correctly."
+          },
+          {
+            "id": 4,
+            "title": "Wire Tiptap editor instance to CRDT content",
+            "description": "Instantiate Tiptap’s `useEditor` with collaboration extensions and connect it to the Y.Doc XML fragment for real-time editing.",
+            "dependencies": [
+              3
+            ],
+            "details": "Create `useCollaborativeEditor({docId, user})` that initializes useEditor with StarterKit, Placeholder, Collaboration extensions, uses `ydoc.getXmlFragment('content')`, syncs selection awareness, and exposes command helpers.",
+            "status": "done",
+            "testStrategy": "React Testing Library hook tests ensuring editor initializes with provided docId and reacts to Y.Doc updates via mocked provider."
+          },
+          {
+            "id": 5,
+            "title": "Build formatting toolbar and command bindings",
+            "description": "Add shadcn Toggle/Dropdown controls for bold, italic, lists, undo/redo tied to editor state and disabled when actions unavailable.",
+            "dependencies": [
+              4
+            ],
+            "details": "Implement toolbar component reading editor.isActive()/can() states, dispatching commands within requestAnimationFrame, handling keyboard shortcuts, and ensuring accessibility via aria labels and separators.",
+            "status": "done",
+            "testStrategy": "Component tests rendering toolbar with mocked editor verifying buttons call expected commands and disabled states reflect editor.can()."
+          },
+          {
+            "id": 6,
+            "title": "Implement presence indicators and Firestore collaborator updates",
+            "description": "Show active collaborators with avatars/cursors by syncing focus/blur events to a `collaborators` subcollection and rendering awareness data.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "On editor focus, upsert collaborator doc with user info, color, cursor, and TTL; on blur/unload remove entry; subscribe to subcollection to display avatar chips + caret decorations driven by awareness states.",
+            "status": "done",
+            "testStrategy": "Integration test simulating two clients updating collaborators and asserting UI shows both presences; unit test for TTL cleanup logic."
+          },
+          {
+            "id": 7,
+            "title": "Autosave snapshots, debounced persistence, and permissions guard",
+            "description": "Add interval + blur-triggered saves that snapshot Y.Doc content, respect user permissions, and surface failures gracefully.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Implement a debounced `saveDocument(docId)` that serializes Y.Doc to Firestore every 5s and on blur, checks user claims/roles before write, queues retries with backoff, and emits UI feedback; ensure timers clear on unmount.",
+            "status": "done",
+            "testStrategy": "Jest fake timer tests covering 5s autosave cadence, blur-trigger flush, and permission-denied error paths; optional e2e verifying edits persist after reload."
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Inline comments & sidebar discussions",
+        "description": "Add anchored comment system with right-rail threads tied to text selections and real-time updates.",
+        "details": "- Store comments in `/comments` collection with `{docId, position, text, resolved}` per PRD.\n- Editor plugin captures selection ranges, writes comment markers, renders badges inline via decorations.\nPseudo-code:\n```\nfunction addComment(range, text) {\n  const commentRef = doc(collection(db, 'comments'))\n  await setDoc(commentRef, { docId, range, text, authorId, createdAt: serverTimestamp(), resolved: false })\n}\n```\n- Sidebar uses `ScrollArea` showing threads, with resolve/reply actions; updates Firestore in real time.\n- Permission checks: only collaborators can comment; highlight unresolved counts.\n",
+        "testStrategy": "- Firestore security rules unit tests ensuring only doc collaborators CRUD comment.\n- RTL tests for comment form validation + resolve toggle.\n- Cypress scenario with two users commenting simultaneously verifying sync + anchor highlighting.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define comment schema and security rules",
+            "description": "Design the Firestore comment document shape and enforce collaborator-only CRUD access.",
+            "dependencies": [],
+            "details": "Create `/comments` collection docs with `{docId, range, text, authorId, createdAt, resolved}` plus indexes, then update Firestore security rules to restrict read/write to document collaborators and validate required fields.",
+            "status": "done",
+            "testStrategy": "Add Firestore emulator tests covering create/update/delete attempts by authorized vs unauthorized users."
+          },
+          {
+            "id": 2,
+            "title": "Implement editor anchoring plugin",
+            "description": "Capture text selections and render inline badges tied to comment markers.",
+            "dependencies": [
+              1
+            ],
+            "details": "Build an editor plugin that records selection ranges, persists them via `addComment(range, text)`, and injects decoration widgets/badges that react to comment state changes without disrupting CRDT updates.",
+            "status": "done",
+            "testStrategy": "Create unit tests for selection serialization plus visual regression checks for decorations in Storybook or similar harness."
+          },
+          {
+            "id": 3,
+            "title": "Build sidebar thread UI",
+            "description": "Create right-rail scrollable thread list with reply and resolve controls.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Use `ScrollArea` to render grouped comments, showing author, timestamp, inline reply form, and resolve toggle that updates Firestore; ensure focus sync with anchored badge hover/click events.",
+            "status": "done",
+            "testStrategy": "Write RTL tests covering reply submission, resolve toggle, and focus syncing when clicking inline badges."
+          },
+          {
+            "id": 4,
+            "title": "Wire realtime listeners and permissions",
+            "description": "Subscribe to Firestore updates for threads and enforce client-side access checks.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Set up Firestore listeners filtered by `docId`, integrate with auth state to prevent non-collaborators from creating comments, and handle optimistic UI updates with rollback on permission errors.",
+            "status": "done",
+            "testStrategy": "Use mocked Firestore listeners to validate subscription cleanup and simulate permission failures in unit tests."
+          },
+          {
+            "id": 5,
+            "title": "Sync unresolved counts and presence indicators",
+            "description": "Surface unresolved comment totals and collaborator presence in the UI.",
+            "dependencies": [
+              3,
+              4
+            ],
+            "details": "Aggregate unresolved comments per document, expose counts near sidebar header and inline badges, and show collaborator presence/typing indicators for active threads using shared presence channel or Firestore metadata.",
+            "status": "done",
+            "testStrategy": "Add integration tests ensuring unresolved counts update as comments resolve plus presence badges appear/disappear as collaborators enter threads."
+          },
+          {
+            "id": 6,
+            "title": "Automated and end-to-end tests",
+            "description": "Cover anchoring flow, sidebar interactions, and realtime sync in automated suites.",
+            "dependencies": [
+              2,
+              3,
+              4,
+              5
+            ],
+            "details": "Extend Jest/RTL coverage for comment flows and add Cypress scenario with two simulated users verifying simultaneous comments, anchor highlighting, and sidebar syncing plus security rule compliance.",
+            "status": "done",
+            "testStrategy": "Cypress multi-user test plus emulator-backed Jest suite validating end-to-end comment lifecycle."
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Template, tone presets, and refinement requests",
+        "description": "Implement template management UI plus `/api/refine` endpoint to adjust draft tone/style without regeneration.",
+        "details": "- Build `/templates` page CRUD using shadcn `Table`, `Dialog` for create/edit, storing data in `/templates` collection.\n- Document view exposes preset dropdown (Professional, Assertive, Empathetic) + custom instructions textarea.\n- `/api/refine` calls GPT-4o with latest draft, user instructions, and template prompt; merges diff via AI Reviewer response.\nPseudo-code:\n```\nexport async function POST(req) {\n  const { docId, instructions } = await req.json()\n  const doc = await getDoc(docRef)\n  const refined = await refiner({ draft: doc.data().content, instructions })\n  await updateDoc(docRef, { content: refined })\n  return NextResponse.json({ updatedDraft: refined })\n}\n```\n",
+        "testStrategy": "- MSW-backed tests for `/api/refine` ensuring instructions propagate to OpenAI payload.\n- React tests verifying template select updates hidden form state.\n- Manual QA: run refinement and confirm diff summary logged by Reviewer role.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Define templates data schema and Firestore service utilities",
+            "description": "Establish the `/templates` collection schema plus TypeScript types and Firestore helpers for CRUD access.",
+            "dependencies": [],
+            "details": "Create shared `Template` interface (name, tonePrompt, createdAt, updatedAt) and reusable Firestore service functions (`listTemplates`, `createTemplate`, `updateTemplate`, `deleteTemplate`) with validation and error handling hooks.",
+            "status": "done",
+            "testStrategy": "Unit tests mocking Firestore SDK to ensure each helper reads/writes correct paths and fields."
+          },
+          {
+            "id": 2,
+            "title": "Implement `/templates` listing view with shadcn Table",
+            "description": "Build the templates page showing existing templates in a sortable, paginated Table with action buttons.",
+            "dependencies": [
+              1
+            ],
+            "details": "Use Next.js route `/templates`, fetch via server component, render shadcn `Table`, toolbar filters, empty states, and per-row actions wired to service utilities.",
+            "status": "done",
+            "testStrategy": "React Testing Library snapshot/interaction coverage verifying rows render from mocked data and action buttons trigger handlers."
+          },
+          {
+            "id": 3,
+            "title": "Add create/edit dialogs and form handling for templates",
+            "description": "Provide shadcn `Dialog` forms to add or update templates with validation and optimistic updates.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement `TemplateForm` using `react-hook-form`, integrate `Dialog` for create/edit flows, and call Firestore helpers; ensure state resets, optimistic UI, and toast notifications.",
+            "status": "done",
+            "testStrategy": "Component tests covering validation errors, successful submit flows, and optimistic list refresh behavior."
+          },
+          {
+            "id": 4,
+            "title": "Enhance document view with tone preset dropdown and custom instructions",
+            "description": "Add dropdown presets (Professional, Assertive, Empathetic) plus custom instructions textarea tying into refinement requests.",
+            "dependencies": [
+              1
+            ],
+            "details": "Extend document editor sidebar to include preset selector storing hidden state, merge template prompt preview, and persist selections alongside doc metadata for `/api/refine` payloads.",
+            "status": "done",
+            "testStrategy": "RTL tests validating preset selection updates hidden form state and custom instructions field debounces updates."
+          },
+          {
+            "id": 5,
+            "title": "Implement `/api/refine` endpoint and tests with GPT-4o diff merge",
+            "description": "Create Next.js route handler that loads latest draft, calls GPT-4o with template prompt + user instructions, merges diff, and writes refined content.",
+            "dependencies": [
+              1,
+              4
+            ],
+            "details": "Follow provided pseudo-code, add OpenAI client, AI Reviewer diff reconciliation, Firestore update, structured logging, and MSW-backed integration tests ensuring instructions propagate and responses persist.",
+            "status": "done",
+            "testStrategy": "API handler tests via MSW confirming request payload includes draft + instructions, mock GPT response merging, and Firestore update success path plus error handling."
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Export service for DOCX/PDF/TXT",
+        "description": "Create `/api/export` route that transforms latest collaborative draft into downloadable formats using docx + pdf-lib.",
+        "details": "- Build server utility converting ProseMirror JSON to HTML, then to DOCX (`docx` package) and PDF (`pdf-lib` or `@react-pdf/renderer` server-side) plus plain text fallback.\n- `/api/export?docId&format=` fetches document, generates file buffer, sets headers (`Content-Disposition`).\nPseudo-code:\n```\nswitch(format) {\n  case 'docx': buffer = await renderDocx(nodes)\n  case 'pdf': buffer = await renderPdf(html)\n  default: buffer = Buffer.from(plaintext)\n}\nreturn new NextResponse(buffer, { headers })\n```\n- Client toolbar buttons trigger downloads and show toast on errors.\n",
+        "testStrategy": "- Jest tests for serializer ensuring sections map to Introduction/Liability/Damages/Conclusion.\n- API integration test streaming binary and validating `content-type` header.\n- Manual regression exporting sample doc across all formats verifying paragraph + list fidelity.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement ProseMirror JSON to HTML/plaintext serializers",
+            "description": "Create reusable server utilities that convert stored ProseMirror node trees to semantic HTML and plain text strings.",
+            "dependencies": [],
+            "details": "Define serializer module that walks the ProseMirror schema, handles paragraphs, headings, lists, and inline marks, outputs normalized HTML plus a plain text fallback to support TXT exports.",
+            "status": "done",
+            "testStrategy": "Unit tests covering sample documents for HTML and plaintext parity with editor content."
+          },
+          {
+            "id": 2,
+            "title": "Build DOCX rendering utility from serialized HTML",
+            "description": "Use the `docx` package to transform HTML output into a DOCX buffer with styles for headings, paragraphs, and lists.",
+            "dependencies": [
+              1
+            ],
+            "details": "Leverage intermediate HTML to map nodes into `docx` paragraphs, embed metadata (title, author), and ensure multi-page documents render with basic styling and margins.",
+            "status": "done",
+            "testStrategy": "Unit test verifying generated DOCX contains expected paragraphs via `docx` inspector helpers."
+          },
+          {
+            "id": 3,
+            "title": "Build PDF rendering utility using pdf-lib",
+            "description": "Render HTML content into a PDF buffer leveraging `pdf-lib` (or server-side React PDF) for consistent typography.",
+            "dependencies": [
+              1
+            ],
+            "details": "Convert HTML fragments into PDF pages, handle pagination, font embedding, and ensure UTF-8 characters retain fidelity in the resulting buffer.",
+            "status": "done",
+            "testStrategy": "Unit/integration test asserting PDF byte output matches expected metadata and page text search results."
+          },
+          {
+            "id": 4,
+            "title": "Create `/api/export` route with format negotiation",
+            "description": "Implement Next.js route that fetches latest document, selects renderer by `format` query, streams buffer, and sets download headers.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Route loads Firestore draft by `docId`, switches among DOCX/PDF/TXT renderers, sets `Content-Type`/`Content-Disposition`, and handles error responses for missing docs or unsupported formats.",
+            "status": "done",
+            "testStrategy": "API integration test hitting each format and asserting status 200 plus correct `content-type` values."
+          },
+          {
+            "id": 5,
+            "title": "Integrate client toolbar download buttons and toasts",
+            "description": "Add UI controls that call `/api/export` with selected format, trigger downloads, and surface success/error toasts.",
+            "dependencies": [
+              4
+            ],
+            "details": "Extend editor toolbar with shadcn buttons for DOCX/PDF/TXT, invoke fetch with `blob()` handling, and use toaster notifications for failure states or unsupported formats.",
+            "status": "done",
+            "testStrategy": "Playwright UI test clicking download buttons and confirming files start downloading plus toast content."
+          },
+          {
+            "id": 6,
+            "title": "Optimize streaming/performance and add regression tests",
+            "description": "Ensure large documents stream efficiently and add coverage for serializers plus API regression paths.",
+            "dependencies": [
+              4,
+              5
+            ],
+            "details": "Implement streaming/`ReadableStream` responses or chunked buffering, profile memory usage, and author Jest suites for ProseMirror serializers plus route-level tests covering large sample docs.",
+            "status": "done",
+            "testStrategy": "Load/benchmark test simulating large docs plus Jest suites verifying serializer edge cases and `/api/export` behavior."
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Document cloning, versioning, and reliability safeguards",
+        "description": "Implement `/api/clone`, version metadata, and background autosave to meet reliability requirements.",
+        "details": "- Add Firestore field `version` and history subcollection storing snapshots (timestamp + author + diff summary from Reviewer AI).\n- `/api/clone` duplicates document data, increments version, copies Storage references, sets new collaborators array.\nPseudo-code:\n```\nexport async function POST(req) {\n  const { docId, newTitle } = await req.json()\n  const doc = await getDoc(docRef)\n  const cloneRef = doc(collection(db, 'documents'))\n  await setDoc(cloneRef, { ...doc.data(), title: newTitle ?? `${doc.title} Copy`, createdAt: serverTimestamp(), status: 'draft' })\n  return NextResponse.json({ newDocId: cloneRef.id })\n}\n```\n- Auto-save service: debounce CRDT updates, ensure at-least-every-5s persistence, surface status badge (Saving/Saved/Error).\n- Add background Cloud Function or Next.js cron to clean orphan uploads.\n",
+        "testStrategy": "- Firestore emulator tests validating clone copies nested fields without comments.\n- Unit test for autosave hook using fake timers to ensure 5s cadence.\n- Cypress regression: duplicate document, edit clone, verify original untouched and status badges update.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Extend Firestore schema with version field and history collection",
+            "description": "Add `version` metadata to each document and create a structured history subcollection that stores timestamp, author, and Reviewer AI diff summary snapshots.",
+            "dependencies": [],
+            "details": "Update Firestore rules, TypeScript types, and migrations/seeds so documents include an integer `version`, plus `/documents/{docId}/history/{snapshotId}` entries capturing timestamp, author UID, diff summary text, and the relevant content payload to unlock reliable versioning.",
+            "status": "done",
+            "testStrategy": "Use Firestore emulator tests to assert new documents get version=1 and history writes respect security rules."
+          },
+          {
+            "id": 2,
+            "title": "Wire diff-summary logging flow into save pipeline",
+            "description": "Trigger Reviewer AI diff summaries whenever a document is persisted and push structured entries into the history subcollection in lockstep with version increments.",
+            "dependencies": [
+              1
+            ],
+            "details": "Instrument the existing document save/update path to call Reviewer AI (or mock) for diff summaries, increment `version`, and create history entries atomically via Firestore batched writes or transactions so version metadata and diff artifacts stay consistent.",
+            "status": "done",
+            "testStrategy": "Add Jest unit tests stubbing Reviewer AI to verify diff summaries are stored alongside incremented versions within a single transaction."
+          },
+          {
+            "id": 3,
+            "title": "Implement `/api/clone` route that duplicates documents and Storage assets",
+            "description": "Build the POST handler that fetches an existing document, clones Firestore fields, increments version, copies Storage file references, and initializes collaborators for the new draft.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create `app/api/clone/route.ts` leveraging admin SDK to read source doc, duplicate nested metadata except comments, set `title`, `createdAt`, `status`, `version=source.version+1`, clone/copy Storage objects or reference IDs, and ensure collaborators array is reset per spec with proper auth guards.",
+            "status": "done",
+            "testStrategy": "Write Firestore emulator + Storage stub tests confirming cloned docs match source data sans excluded fields and that Storage refs point to duplicated blobs."
+          },
+          {
+            "id": 4,
+            "title": "Build autosave hook/service with 5-second persistence guarantees",
+            "description": "Develop a debounced CRDT-aware autosave module that enforces at-least-every-5s writes, tracks in-flight state, and exposes Saving/Saved/Error status badges in the UI.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Create a React hook/service that batches CRDT ops, uses leading and trailing debounce timers with fallback interval to force writes every ≤5s, handles retry/backoff on failures, and updates UI badges plus telemetry so editors see reliable persistence feedback.",
+            "status": "done",
+            "testStrategy": "Implement Jest tests with fake timers verifying debounce + max-interval logic, plus component tests that badge states transition correctly on success/error."
+          },
+          {
+            "id": 5,
+            "title": "Add background cleanup job for orphaned uploads",
+            "description": "Introduce a Cloud Function or Next.js cron job that scans Storage buckets for files lacking document references and deletes them safely.",
+            "dependencies": [
+              3
+            ],
+            "details": "Schedule a backend job (Cloud Function scheduled trigger or Next.js cron) that queries Firestore for active Storage refs, compares against bucket listings, deletes orphaned files, and logs metrics/alerts to prevent storage bloat without touching in-use assets.",
+            "status": "done",
+            "testStrategy": "Use emulator-driven integration tests or mocked Storage clients verifying that only orphaned files are deleted and referenced files remain untouched."
+          },
+          {
+            "id": 6,
+            "title": "Expand automated test coverage (emulator, Jest, Cypress)",
+            "description": "Create end-to-end coverage ensuring cloning, autosave, and cleanup behaviors work via Firestore emulator suites, Jest unit tests, and Cypress UI flows.",
+            "dependencies": [
+              3,
+              4,
+              5
+            ],
+            "details": "Author Firestore emulator tests for `/api/clone`, Jest suites for autosave & diff logging, and Cypress scenarios that duplicate a document, edit the clone, observe independent versions/status badges, and confirm cleanup jobs don’t regress user flows.",
+            "status": "done",
+            "testStrategy": "Run Firestore emulator specs, Jest suites with fake timers, and Cypress regression covering clone/edit/status badge flows per acceptance criteria."
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-11-12T05:02:14.689Z",
+      "updated": "2025-11-12T07:09:38.746Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

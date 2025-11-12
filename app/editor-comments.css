@@ -1,0 +1,55 @@
+/* Comment highlighting styles */
+.comment-editor {
+  position: relative;
+}
+
+/* Comment highlights */
+.comment-highlight {
+  background-color: rgba(250, 204, 21, 0.2);
+  border-bottom: 2px solid rgba(250, 204, 21, 0.6);
+  transition: all 0.2s ease;
+}
+
+.comment-highlight:hover {
+  background-color: rgba(250, 204, 21, 0.3);
+}
+
+.comment-active {
+  background-color: rgba(59, 130, 246, 0.2);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.8);
+}
+
+.comment-resolved {
+  background-color: rgba(156, 163, 175, 0.15);
+  border-bottom: 2px solid rgba(156, 163, 175, 0.4);
+  opacity: 0.7;
+}
+
+/* Comment badges */
+.comment-badge {
+  display: inline-flex;
+  vertical-align: baseline;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.comment-badge.active {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Smooth transitions for comment interactions */
+.comment-highlight,
+.comment-active,
+.comment-resolved,
+.comment-badge {
+  transition: all 0.2s ease-in-out;
+}
