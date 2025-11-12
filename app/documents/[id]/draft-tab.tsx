@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,29 +12,46 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useDocument } from "@/hooks/use-document";
 import { useGenerate } from "@/hooks/use-generate";
 import { ExportMenu } from "@/components/editor/ExportMenu";
-import { Sparkles, FileText } from "lucide-react";
+import { Sparkles, FileText, Save } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DEFAULT_TONE_PROMPTS, type TonePreset } from "@/lib/templates/types";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase-client";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/contexts/auth-context";
+import { useTemplates } from "@/lib/templates/hooks/useTemplates";
 
 interface DraftTabProps {
   docId: string;
 }
 
 export function DraftTab({ docId }: DraftTabProps) {
+  const { user } = useAuth();
   const { document, loading, updateContent } = useDocument(docId);
   const { generate, loading: generating } = useGenerate(docId);
+  const { templates } = useTemplates(db);
   const [editedContent, setEditedContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
 
   // Template selection for draft generation
-  const [selectedTone, setSelectedTone] = useState<TonePreset>("professional");
+  const [selectedTone, setSelectedTone] = useState<TonePreset | string>("professional");
   const [customInstructions, setCustomInstructions] = useState("");
+
+  // Save template modal state
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
   useEffect(() => {
     if (document?.content) {
@@ -59,10 +77,21 @@ export function DraftTab({ docId }: DraftTabProps) {
     }
 
     // Prepare instructions for generation
-    // For presets, use the default prompt; for custom, use user input
-    const instructions = selectedTone === "custom"
-      ? customInstructions.trim()
-      : DEFAULT_TONE_PROMPTS[selectedTone as Exclude<TonePreset, "custom">];
+    let instructions: string;
+
+    if (selectedTone === "custom") {
+      // Use user-entered custom instructions
+      instructions = customInstructions.trim();
+    } else {
+      // Check if it's a saved template
+      const savedTemplate = templates.find(t => t.id === selectedTone);
+      if (savedTemplate) {
+        instructions = savedTemplate.tonePrompt;
+      } else {
+        // Use default preset prompt
+        instructions = DEFAULT_TONE_PROMPTS[selectedTone as Exclude<TonePreset, "custom">];
+      }
+    }
 
     await generate(["compose"], instructions);
   };
@@ -72,7 +101,54 @@ export function DraftTab({ docId }: DraftTabProps) {
     if (selectedTone === "custom") {
       return customInstructions;
     }
+
+    // Check if it's a saved template
+    const savedTemplate = templates.find(t => t.id === selectedTone);
+    if (savedTemplate) {
+      return savedTemplate.tonePrompt;
+    }
+
     return DEFAULT_TONE_PROMPTS[selectedTone as Exclude<TonePreset, "custom">] || "";
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!user) {
+      toast.error("You must be logged in to save templates");
+      return;
+    }
+
+    if (!templateName.trim()) {
+      toast.error("Please enter a template name");
+      return;
+    }
+
+    if (!customInstructions.trim()) {
+      toast.error("Please enter custom instructions");
+      return;
+    }
+
+    setIsSavingTemplate(true);
+    try {
+      await addDoc(collection(db, "templates"), {
+        name: templateName.trim(),
+        description: "Custom template",
+        tonePreset: "custom" as TonePreset,
+        tonePrompt: customInstructions.trim(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: user.uid,
+        isDefault: false,
+      });
+
+      toast.success("Template saved successfully");
+      setIsSaveModalOpen(false);
+      setTemplateName("");
+    } catch (error) {
+      console.error("Error saving template:", error);
+      toast.error("Failed to save template");
+    } finally {
+      setIsSavingTemplate(false);
+    }
   };
 
   if (loading) {
@@ -138,10 +214,10 @@ export function DraftTab({ docId }: DraftTabProps) {
 
               <div className="space-y-4">
                 {/* Template and Instructions Controls */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="initial-template-select">Template</Label>
-                    <Select value={selectedTone} onValueChange={(value) => setSelectedTone(value as TonePreset)}>
+                    <Select value={selectedTone} onValueChange={setSelectedTone}>
                       <SelectTrigger id="initial-template-select">
                         <SelectValue />
                       </SelectTrigger>
@@ -150,11 +226,34 @@ export function DraftTab({ docId }: DraftTabProps) {
                         <SelectItem value="assertive">Assertive</SelectItem>
                         <SelectItem value="empathetic">Empathetic</SelectItem>
                         <SelectItem value="custom">Custom</SelectItem>
+                        {templates.length > 0 && (
+                          <>
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                              Saved Templates
+                            </div>
+                            {templates.map((template) => (
+                              <SelectItem key={template.id} value={template.id!}>
+                                {template.name}
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
+                    {selectedTone === "custom" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsSaveModalOpen(true)}
+                        className="w-full"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Template
+                      </Button>
+                    )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="col-span-2 space-y-2">
                     <Label htmlFor="initial-instructions">Instructions</Label>
                     <Textarea
                       id="initial-instructions"
@@ -184,10 +283,10 @@ export function DraftTab({ docId }: DraftTabProps) {
           {content && (
             <div className="space-y-4">
               {/* Template and Instructions Controls */}
-              <div className="grid grid-cols-2 gap-4 pb-4 border-b">
+              <div className="grid grid-cols-3 gap-4 pb-4 border-b">
                 <div className="space-y-2">
                   <Label htmlFor="template-select">Template</Label>
-                  <Select value={selectedTone} onValueChange={(value) => setSelectedTone(value as TonePreset)}>
+                  <Select value={selectedTone} onValueChange={setSelectedTone}>
                     <SelectTrigger id="template-select">
                       <SelectValue />
                     </SelectTrigger>
@@ -196,11 +295,34 @@ export function DraftTab({ docId }: DraftTabProps) {
                       <SelectItem value="assertive">Assertive</SelectItem>
                       <SelectItem value="empathetic">Empathetic</SelectItem>
                       <SelectItem value="custom">Custom</SelectItem>
+                      {templates.length > 0 && (
+                        <>
+                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                            Saved Templates
+                          </div>
+                          {templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id!}>
+                              {template.name}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
+                  {selectedTone === "custom" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsSaveModalOpen(true)}
+                      className="w-full"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Template
+                    </Button>
+                  )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="col-span-2 space-y-2">
                   <Label htmlFor="instructions">Instructions</Label>
                   <Textarea
                     id="instructions"
@@ -236,6 +358,48 @@ export function DraftTab({ docId }: DraftTabProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Save Template Modal */}
+      <Dialog open={isSaveModalOpen} onOpenChange={setIsSaveModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Custom Template</DialogTitle>
+            <DialogDescription>
+              Give your custom template a name to save it for future use.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="template-name">
+                Template Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="template-name"
+                placeholder="e.g., Aggressive Demand Letter"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Instructions Preview</Label>
+              <div className="p-3 rounded-lg bg-muted text-sm max-h-32 overflow-y-auto">
+                {customInstructions || "No instructions provided"}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSaveModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveTemplate} disabled={isSavingTemplate || !templateName.trim()}>
+              {isSavingTemplate ? "Saving..." : "Confirm"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
