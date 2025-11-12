@@ -3,14 +3,22 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { collection, query, where, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, onSnapshot, Timestamp, deleteDoc, doc, addDoc, getDoc, serverTimestamp, getDocs, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { useAuth } from "@/contexts/auth-context";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Loader2, Clock, User } from "lucide-react";
+import { FileText, Plus, Loader2, Clock, User, Copy, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Document {
   id: string;
@@ -41,6 +49,9 @@ function DashboardContent() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -108,6 +119,83 @@ function DashboardContent() {
     }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, document: Document) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDocumentToDelete(document);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!documentToDelete) return;
+
+    setActionLoading(true);
+    try {
+      await deleteDoc(doc(db, 'documents', documentToDelete.id));
+      setDeleteDialogOpen(false);
+      setDocumentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCopyDocument = async (e: React.MouseEvent, document: Document) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) return;
+
+    setActionLoading(true);
+    try {
+      // Fetch the full document data
+      const docRef = doc(db, 'documents', document.id);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        throw new Error('Document not found');
+      }
+
+      const docData = docSnap.data();
+
+      // Create a copy with a new title
+      const copyData = {
+        ...docData,
+        title: `${document.title} (Copy)`,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        ownerId: user.uid,
+        status: 'draft'
+      };
+
+      // Create the new document
+      const newDocRef = await addDoc(collection(db, 'documents'), copyData);
+
+      // Copy the sources subcollection
+      const sourcesRef = collection(db, 'documents', document.id, 'sources');
+      const sourcesSnapshot = await getDocs(sourcesRef);
+
+      // Copy each source document to the new document
+      const copyPromises = sourcesSnapshot.docs.map(async (sourceDoc) => {
+        const sourceData = sourceDoc.data();
+        const newSourceRef = doc(db, 'documents', newDocRef.id, 'sources', sourceDoc.id);
+        await setDoc(newSourceRef, sourceData);
+      });
+
+      await Promise.all(copyPromises);
+
+      // Navigate to the new document
+      router.push(`/documents/${newDocRef.id}`);
+    } catch (error) {
+      console.error('Error copying document:', error);
+      alert('Failed to copy document. Please try again.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8 flex items-center justify-between">
@@ -156,11 +244,11 @@ function DashboardContent() {
                     href={`/documents/${doc.id}`}
                     className="block p-4 rounded-lg border hover:bg-accent transition-colors"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <FileText className="h-4 w-4 text-muted-foreground" />
-                          <h3 className="font-medium">{doc.title}</h3>
+                          <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <h3 className="font-medium truncate">{doc.title}</h3>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
@@ -175,9 +263,31 @@ function DashboardContent() {
                           )}
                         </div>
                       </div>
-                      <Badge variant={doc.status === 'final' ? 'default' : 'secondary'}>
-                        {doc.status}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge variant={doc.status === 'final' ? 'default' : 'secondary'}>
+                          {doc.status}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => handleCopyDocument(e, doc)}
+                          disabled={actionLoading}
+                          title="Copy document"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => handleDeleteClick(e, doc)}
+                          disabled={actionLoading}
+                          title="Delete document"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </Link>
                 ))}
@@ -264,6 +374,41 @@ function DashboardContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Document</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{documentToDelete?.title}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
