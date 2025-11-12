@@ -94,10 +94,21 @@ export async function POST(request: NextRequest) {
       // Use default tone prompt
       tonePrompt = DEFAULT_TONE_PROMPTS[tonePreset as Exclude<TonePreset, 'custom'>]
     } else if (templateId) {
-      // For template ID support, you would load the template here
-      // const template = await getTemplate(db, templateId)
-      // if (template) tonePrompt = template.tonePrompt
-      console.log('[API Refine] Template ID support not yet implemented')
+      // Load template from Firestore
+      try {
+        const templateRef = db.collection('templates').doc(templateId)
+        const templateSnap = await templateRef.get()
+
+        if (templateSnap.exists) {
+          const templateData = templateSnap.data()
+          tonePrompt = templateData?.tonePrompt || ''
+          console.log('[API Refine] Using template:', templateData?.name)
+        } else {
+          console.warn('[API Refine] Template not found:', templateId)
+        }
+      } catch (error) {
+        console.error('[API Refine] Error loading template:', error)
+      }
     }
 
     if (!tonePrompt && !instructions) {

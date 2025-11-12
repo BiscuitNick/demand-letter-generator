@@ -131,9 +131,14 @@ export async function composeLetter(
     })
     .join("\n");
 
+  // Build tone instructions
+  const toneInstructions = input.tonePrompt
+    ? input.tonePrompt
+    : `Use a ${input.tone || "professional"} tone.`;
+
   const userPrompt = COMPOSER_USER_PROMPT.replace("{{OUTLINE}}", outlineText)
     .replace("{{FACTS}}", factsText)
-    .replace("{{TONE}}", input.tone || "professional")
+    .replace("{{TONE}}", toneInstructions)
     .replace(
       "{{INSTRUCTIONS}}",
       input.instructions ? `Additional instructions: ${input.instructions}` : ""

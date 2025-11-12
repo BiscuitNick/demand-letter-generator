@@ -72,6 +72,7 @@ export interface ComposerInput {
   outline: OutlineSection[];
   facts: ExtractedFact[];
   tone?: "professional" | "assertive" | "empathetic";
+  tonePrompt?: string; // Custom tone instructions from template
   instructions?: string;
 }
 

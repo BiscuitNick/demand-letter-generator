@@ -141,9 +141,31 @@ export async function POST(req: NextRequest) {
           const currentData = (await docRef.get()).data();
           const outline = currentData?.outline || [];
           const facts = currentData?.facts || [];
+          const templateId = currentData?.templateId;
 
           if (outline.length === 0) {
             throw new Error("No outline available. Run outline step first.");
+          }
+
+          // Load template if specified
+          let tone = "professional"; // Default tone
+          let tonePrompt: string | undefined;
+
+          if (templateId) {
+            try {
+              const templateRef = db.collection("templates").doc(templateId);
+              const templateSnap = await templateRef.get();
+
+              if (templateSnap.exists) {
+                const templateData = templateSnap.data();
+                tonePrompt = templateData?.tonePrompt;
+                console.log(`[Generate] Using template: ${templateData?.name}`);
+              } else {
+                console.warn(`[Generate] Template ${templateId} not found, using default`);
+              }
+            } catch (error) {
+              console.error(`[Generate] Error loading template:`, error);
+            }
           }
 
           // Compose letter
@@ -159,7 +181,8 @@ export async function POST(req: NextRequest) {
               sourceFile: f.sourceFile,
               confidence: 0.8,
             })),
-            tone: "professional",
+            tone,
+            tonePrompt,
             instructions,
           });
 
