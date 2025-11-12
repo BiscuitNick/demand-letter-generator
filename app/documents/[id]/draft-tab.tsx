@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,9 @@ import { Sparkles, FileText, Wand2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DEFAULT_TONE_PROMPTS, TONE_PRESET_LABELS, TONE_PRESET_DESCRIPTIONS, type TonePreset } from "@/lib/templates/types";
 import { toast } from "sonner";
+import { useTemplates } from "@/lib/templates/hooks/useTemplates";
+import { db } from "@/lib/firebase-client";
+import { doc, updateDoc } from "firebase/firestore";
 
 interface DraftTabProps {
   docId: string;
@@ -26,8 +31,12 @@ interface DraftTabProps {
 export function DraftTab({ docId }: DraftTabProps) {
   const { document, loading, updateContent } = useDocument(docId);
   const { generate, loading: generating } = useGenerate(docId);
+  const { templates, loading: templatesLoading } = useTemplates(db);
   const [editedContent, setEditedContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Template selection for initial generation
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   // Tone refinement state
   const [selectedTone, setSelectedTone] = useState<TonePreset>("professional");
@@ -51,6 +60,18 @@ export function DraftTab({ docId }: DraftTabProps) {
   };
 
   const handleGenerateDraft = async () => {
+    // Save selected template to document if one was chosen
+    if (selectedTemplate && selectedTemplate !== 'system') {
+      try {
+        const docRef = doc(db, 'documents', docId);
+        await updateDoc(docRef, {
+          templateId: selectedTemplate,
+        });
+      } catch (error) {
+        console.error('Error saving template selection:', error);
+      }
+    }
+
     await generate(["compose"]);
   };
 
@@ -143,15 +164,77 @@ export function DraftTab({ docId }: DraftTabProps) {
           )}
 
           {hasOutline && !content && (
-            <div className="text-center py-8">
-              <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground mb-4">
-                No draft generated yet
-              </p>
-              <Button onClick={handleGenerateDraft} disabled={generating}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                {generating ? "Composing..." : "Compose Draft"}
-              </Button>
+            <div className="space-y-6">
+              <div className="text-center py-4">
+                <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-2 font-medium">
+                  Ready to compose your demand letter
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Select a template to define the tone and style
+                </p>
+              </div>
+
+              {templatesLoading ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground">Loading templates...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Label>Choose Template (Optional)</Label>
+                  <RadioGroup value={selectedTemplate || 'system'} onValueChange={setSelectedTemplate}>
+                    <div className="space-y-3">
+                      {/* System Default Option */}
+                      <div className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent cursor-pointer">
+                        <RadioGroupItem value="system" id="system-draft" className="mt-1" />
+                        <Label htmlFor="system-draft" className="flex-1 cursor-pointer">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">System Default</span>
+                            <Badge variant="secondary">Recommended</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Professional tone with standard legal terminology
+                          </p>
+                        </Label>
+                      </div>
+
+                      {/* User Templates */}
+                      {templates.map((template) => (
+                        <div
+                          key={template.id}
+                          className="flex items-start space-x-3 p-4 rounded-lg border hover:bg-accent cursor-pointer"
+                        >
+                          <RadioGroupItem value={template.id} id={`template-${template.id}`} className="mt-1" />
+                          <Label htmlFor={`template-${template.id}`} className="flex-1 cursor-pointer">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium">{template.name}</span>
+                              {template.isDefault && (
+                                <Badge variant="secondary" className="text-xs">Default</Badge>
+                              )}
+                              <Badge variant="outline" className="text-xs">
+                                {TONE_PRESET_LABELS[template.tonePreset]}
+                              </Badge>
+                            </div>
+                            {template.description && (
+                              <p className="text-sm text-muted-foreground">{template.description}</p>
+                            )}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+
+                  <Button
+                    onClick={handleGenerateDraft}
+                    disabled={generating}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {generating ? "Composing..." : "Compose Draft"}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
