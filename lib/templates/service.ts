@@ -31,18 +31,26 @@ function timestampToDate(timestamp: Timestamp): Date {
  * Convert Firestore template document to Template type
  */
 function convertTemplateDocument(id: string, data: TemplateDocument): Template {
-  return {
+  const template: Template = {
     id,
     name: data.name,
-    description: data.description,
     tonePreset: data.tonePreset,
     tonePrompt: data.tonePrompt,
-    sections: data.sections,
     createdAt: timestampToDate(data.createdAt),
     updatedAt: timestampToDate(data.updatedAt),
     createdBy: data.createdBy,
     isDefault: data.isDefault || false,
   }
+
+  // Only include optional fields if they exist
+  if (data.description !== undefined) {
+    template.description = data.description
+  }
+  if (data.sections !== undefined) {
+    template.sections = data.sections
+  }
+
+  return template
 }
 
 /**
@@ -110,16 +118,22 @@ export async function createTemplate(
   const templatesRef = collection(db, 'templates')
   const templateRef = doc(templatesRef)
 
-  const templateData: Omit<TemplateDocument, 'updatedAt'> & { updatedAt: any } = {
+  const templateData: any = {
     name: options.name,
-    description: options.description,
     tonePreset: options.tonePreset,
     tonePrompt: options.tonePrompt,
-    sections: options.sections,
     createdAt: serverTimestamp() as Timestamp,
     updatedAt: serverTimestamp(),
     createdBy: options.createdBy,
     isDefault: options.isDefault || false,
+  }
+
+  // Only include optional fields if they are defined
+  if (options.description !== undefined) {
+    templateData.description = options.description
+  }
+  if (options.sections !== undefined) {
+    templateData.sections = options.sections
   }
 
   await setDoc(templateRef, templateData)
@@ -139,8 +153,24 @@ export async function updateTemplate(
   const templateRef = doc(db, 'templates', templateId)
 
   const updateData: any = {
-    ...options,
     updatedAt: serverTimestamp(),
+  }
+
+  // Only include fields that are actually provided
+  if (options.name !== undefined) {
+    updateData.name = options.name
+  }
+  if (options.description !== undefined) {
+    updateData.description = options.description
+  }
+  if (options.tonePreset !== undefined) {
+    updateData.tonePreset = options.tonePreset
+  }
+  if (options.tonePrompt !== undefined) {
+    updateData.tonePrompt = options.tonePrompt
+  }
+  if (options.sections !== undefined) {
+    updateData.sections = options.sections
   }
 
   await updateDoc(templateRef, updateData)
