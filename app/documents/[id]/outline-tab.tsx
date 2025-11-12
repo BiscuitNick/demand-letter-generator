@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useDocument } from "@/hooks/use-document";
 import { useGenerate } from "@/hooks/use-generate";
 import { Sparkles, GripVertical, Edit2, Check, X } from "lucide-react";
@@ -31,7 +32,7 @@ interface OutlineTabProps {
   docId: string;
 }
 
-function SortableSection({ section, onEdit }: { section: OutlineSection; onEdit: (section: OutlineSection) => void }) {
+function SortableSection({ section, onEdit, onToggle }: { section: OutlineSection; onEdit: (section: OutlineSection) => void; onToggle: (sectionId: string) => void }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSection, setEditedSection] = useState(section);
 
@@ -58,8 +59,16 @@ function SortableSection({ section, onEdit }: { section: OutlineSection; onEdit:
     setIsEditing(false);
   };
 
+  const isEnabled = (section as any).enabled !== false; // Default to enabled
+
   return (
-    <div ref={setNodeRef} style={style} className="flex items-start gap-3 p-4 rounded-lg border bg-card">
+    <div ref={setNodeRef} style={style} className={`flex items-start gap-3 p-4 rounded-lg border bg-card ${!isEnabled ? 'opacity-50' : ''}`}>
+      <Checkbox
+        checked={isEnabled}
+        onCheckedChange={() => onToggle(section.id)}
+        className="mt-1"
+      />
+
       <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mt-1">
         <GripVertical className="h-5 w-5 text-muted-foreground" />
       </div>
@@ -156,6 +165,20 @@ export function OutlineTab({ docId }: OutlineTabProps) {
     await updateOutline(updatedOutline);
   };
 
+  const handleToggleSection = async (sectionId: string) => {
+    if (!document?.outline) return;
+
+    const updatedOutline = document.outline.map((section) => {
+      if (section.id === sectionId) {
+        const currentEnabled = (section as any).enabled !== false;
+        return { ...section, enabled: !currentEnabled } as any;
+      }
+      return section;
+    });
+
+    await updateOutline(updatedOutline);
+  };
+
   const handleGenerateOutline = async () => {
     await generate(["outline"]);
   };
@@ -223,6 +246,7 @@ export function OutlineTab({ docId }: OutlineTabProps) {
                       key={section.id}
                       section={section}
                       onEdit={handleEditSection}
+                      onToggle={handleToggleSection}
                     />
                   ))}
                 </div>

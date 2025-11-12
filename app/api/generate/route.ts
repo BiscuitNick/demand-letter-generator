@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-helpers";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { loadDocuments } from "@/lib/ai/document-loader";
+import { loadDocument } from "@/lib/ai/document-loader";
 import { extractFacts, generateOutline, composeLetter } from "@/lib/ai/pipeline";
 import type { PipelineStep } from "@/lib/ai/types";
 import { Timestamp } from "firebase-admin/firestore";
@@ -67,23 +67,42 @@ export async function POST(req: NextRequest) {
         case "extract": {
           // Load source documents
           const sourcesSnap = await docRef.collection("sources").get();
-          const storagePaths = sourcesSnap.docs
-            .map((doc) => doc.data().path)
-            .filter(Boolean);
 
-          if (storagePaths.length === 0) {
+          if (sourcesSnap.empty) {
             throw new Error("No source documents found");
           }
 
-          const documents = await loadDocuments(storagePaths);
+          // Process sources - handle both storage files and manual text entries
+          const documents = [];
+
+          for (const sourceDoc of sourcesSnap.docs) {
+            const sourceData = sourceDoc.data();
+
+            if (sourceData.isManualEntry && sourceData.content) {
+              // Manual text entry - use content directly from Firestore
+              documents.push({
+                name: sourceData.name || "Manual Entry",
+                content: sourceData.content,
+                type: sourceData.type || "text/plain",
+              });
+            } else if (sourceData.path) {
+              // Regular file - load from storage
+              const loadedDoc = await loadDocument(sourceData.path);
+              documents.push({
+                name: loadedDoc.name,
+                content: loadedDoc.content,
+                type: loadedDoc.type,
+              });
+            }
+          }
+
+          if (documents.length === 0) {
+            throw new Error("No valid source documents found");
+          }
 
           // Extract facts
           const extractorResult = await extractFacts({
-            documents: documents.map((doc) => ({
-              name: doc.name,
-              content: doc.content,
-              type: doc.type,
-            })),
+            documents,
             instructions,
           });
 
@@ -147,6 +166,9 @@ export async function POST(req: NextRequest) {
             throw new Error("No outline available. Run outline step first.");
           }
 
+          // Filter out disabled sections
+          const enabledSections = outline.filter((s: any) => s.enabled !== false);
+
           // Load template if specified
           let tone = "professional"; // Default tone
           let tonePrompt: string | undefined;
@@ -168,9 +190,9 @@ export async function POST(req: NextRequest) {
             }
           }
 
-          // Compose letter
+          // Compose letter using only enabled sections
           const composerResult = await composeLetter({
-            outline: outline.map((s: { id: string; title: string; order: number; notes?: string }) => ({
+            outline: enabledSections.map((s: { id: string; title: string; order: number; notes?: string }) => ({
               id: s.id,
               title: s.title,
               order: s.order,

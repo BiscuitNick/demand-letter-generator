@@ -19,8 +19,10 @@ export const EXTRACTOR_USER_PROMPT = `Analyze the following documents and extrac
 
 {{INSTRUCTIONS}}
 
+IMPORTANT: Extract only unique, distinct facts. Avoid redundancy - do not list multiple variations of the same fact. Consolidate related information into single, comprehensive fact statements.
+
 Extract facts in JSON format with:
-- text: The factual statement
+- text: The factual statement (be specific and concise)
 - sourceFile: Which document this came from
 - confidence: Your confidence in this fact (0-1)
 - category: One of: damages, liability, timeline, parties, evidence`;
