@@ -20,7 +20,7 @@ import { useDocument } from "@/hooks/use-document";
 import { useSources } from "@/hooks/use-sources";
 import { useGenerate } from "@/hooks/use-generate";
 import { Sparkles, FileText, Plus, Edit, Trash2 } from "lucide-react";
-import { serverTimestamp } from "firebase/firestore";
+import { Timestamp } from "firebase/firestore";
 
 interface FactsTabProps {
   docId: string;
@@ -102,7 +102,7 @@ export function FactsTab({ docId }: FactsTabProps) {
         text: factText,
         verified: false,
         marked: true,
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.now(),
       };
       // Only include sourceFile if it has a value
       if (factSource && factSource.trim()) {

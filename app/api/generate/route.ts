@@ -160,7 +160,6 @@ export async function POST(req: NextRequest) {
           const currentData = (await docRef.get()).data();
           const outline = currentData?.outline || [];
           const facts = currentData?.facts || [];
-          const templateId = currentData?.templateId;
 
           if (outline.length === 0) {
             throw new Error("No outline available. Run outline step first.");
@@ -169,28 +168,8 @@ export async function POST(req: NextRequest) {
           // Filter out disabled sections
           const enabledSections = outline.filter((s: any) => s.enabled !== false);
 
-          // Load template if specified
-          let tone = "professional"; // Default tone
-          let tonePrompt: string | undefined;
-
-          if (templateId) {
-            try {
-              const templateRef = db.collection("templates").doc(templateId);
-              const templateSnap = await templateRef.get();
-
-              if (templateSnap.exists) {
-                const templateData = templateSnap.data();
-                tonePrompt = templateData?.tonePrompt;
-                console.log(`[Generate] Using template: ${templateData?.name}`);
-              } else {
-                console.warn(`[Generate] Template ${templateId} not found, using default`);
-              }
-            } catch (error) {
-              console.error(`[Generate] Error loading template:`, error);
-            }
-          }
-
           // Compose letter using only enabled sections
+          // Instructions now come directly from the Draft tab (template selection)
           const composerResult = await composeLetter({
             outline: enabledSections.map((s: { id: string; title: string; order: number; notes?: string }) => ({
               id: s.id,
@@ -203,9 +182,9 @@ export async function POST(req: NextRequest) {
               sourceFile: f.sourceFile,
               confidence: 0.8,
             })),
-            tone,
-            tonePrompt,
-            instructions,
+            tone: "professional", // Deprecated - now using tonePrompt/instructions
+            tonePrompt: instructions, // Use instructions directly as tone prompt
+            instructions: undefined, // Don't duplicate instructions
           });
 
           // Store composed content in Firestore
