@@ -42,10 +42,12 @@ export const OUTLINER_USER_PROMPT = `Create a detailed outline for a demand lett
 
 {{INSTRUCTIONS}}
 
-Structure the outline with sections that flow logically and cover all key points. Each section should have:
-- title: Section heading
-- description: What this section will cover
-- suggestedContent: Brief notes on key points to include`;
+Structure the outline with sections that flow logically and cover all key points. Return your response in JSON format with:
+- sections: Array of section objects, each with:
+  - title: Section heading
+  - description: What this section will cover
+  - suggestedContent: Brief notes on key points to include
+- reasoning: Brief explanation of the outline structure chosen`;
 
 export const COMPOSER_SYSTEM_PROMPT = `You are an expert legal writer who composes professional demand letters. Write clear, persuasive, and professional correspondence that:
 
