@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useDocument } from "@/hooks/use-document";
 import { useGenerate } from "@/hooks/use-generate";
-import { Sparkles, FileText, Download } from "lucide-react";
+import { ExportMenu } from "@/components/editor/ExportMenu";
+import { Sparkles, FileText } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface DraftTabProps {
@@ -36,11 +37,6 @@ export function DraftTab({ docId }: DraftTabProps) {
 
   const handleGenerateDraft = async () => {
     await generate(["compose"]);
-  };
-
-  const handleExport = () => {
-    // TODO: Implement export functionality
-    alert("Export functionality coming soon!");
   };
 
   if (loading) {
@@ -74,10 +70,7 @@ export function DraftTab({ docId }: DraftTabProps) {
                     Save Changes
                   </Button>
                 )}
-                <Button onClick={handleExport} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
+                <ExportMenu docId={docId} />
               </div>
             )}
           </div>

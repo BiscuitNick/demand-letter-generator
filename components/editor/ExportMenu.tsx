@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/hooks/use-toast'
+import { auth } from '@/lib/firebase-client'
 
 interface ExportMenuProps {
   docId: string
@@ -28,7 +29,19 @@ export function ExportMenu({ docId, disabled = false }: ExportMenuProps) {
     setIsExporting(true)
 
     try {
-      const response = await fetch(`/api/export?docId=${docId}&format=${format}`)
+      // Get Firebase ID token
+      const user = auth.currentUser
+      if (!user) {
+        throw new Error('Not authenticated')
+      }
+
+      const token = await user.getIdToken()
+
+      const response = await fetch(`/api/export?docId=${docId}&format=${format}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
 
       if (!response.ok) {
         const error = await response.json()

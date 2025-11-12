@@ -2,17 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { htmlToPdf } from '@/lib/export/pdf-renderer'
 import { htmlToDocx } from '@/lib/export/docx-renderer'
 import { htmlToPlaintext } from '@/lib/export/serializers'
-
-// Lazy load admin DB to avoid initialization issues during build
-function getDb() {
-  try {
-    const { getAdminDb } = require('@/lib/firebase-admin')
-    return getAdminDb()
-  } catch (error) {
-    console.error('[API Export] Firebase Admin not configured:', error)
-    return null
-  }
-}
+import { requireAuth } from '@/lib/auth-helpers'
+import { getAdminDb } from '@/lib/firebase-admin'
 
 type ExportFormat = 'docx' | 'pdf' | 'txt'
 
@@ -35,6 +26,9 @@ const FILE_EXTENSIONS: Record<ExportFormat, string> = {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Require authentication
+    const user = await requireAuth(request)
+
     const searchParams = request.nextUrl.searchParams
     const docId = searchParams.get('docId')
     const format = searchParams.get('format') as ExportFormat
@@ -55,13 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get database instance
-    const db = getDb()
-    if (!db) {
-      return NextResponse.json(
-        { error: 'Firebase Admin not configured' },
-        { status: 500 }
-      )
-    }
+    const db = getAdminDb()
 
     // Fetch document from Firestore
     const docRef = db.collection('documents').doc(docId)
@@ -89,32 +77,38 @@ export async function GET(request: NextRequest) {
     const sanitizedTitle = title.replace(/[^a-z0-9]/gi, '-').toLowerCase()
     const filename = `${sanitizedTitle}${FILE_EXTENSIONS[format]}`
 
+    // Convert plain text to HTML if needed
+    // The export functions expect HTML, so wrap plain text in basic HTML structure
+    const htmlContent = content.includes('<') && content.includes('>')
+      ? content // Already HTML
+      : `<div>${content.split('\n\n').map((p: string) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('')}</div>` // Convert plain text to HTML
+
     // Export based on format
     let buffer: Buffer
     let contentType: string
 
     switch (format) {
       case 'docx':
-        buffer = await htmlToDocx(content, {
+        buffer = await htmlToDocx(htmlContent, {
           title: docData?.title,
-          author: docData?.author,
+          author: user.email || docData?.author,
           description: docData?.description,
         })
         contentType = CONTENT_TYPES.docx
         break
 
       case 'pdf':
-        buffer = await htmlToPdf(content, {
+        buffer = await htmlToPdf(htmlContent, {
           title: docData?.title,
-          author: docData?.author,
+          author: user.email || docData?.author,
           subject: docData?.subject,
         })
         contentType = CONTENT_TYPES.pdf
         break
 
       case 'txt':
-        const plaintext = htmlToPlaintext(content)
-        buffer = Buffer.from(plaintext, 'utf-8')
+        // For plain text, just use the original content directly
+        buffer = Buffer.from(content, 'utf-8')
         contentType = CONTENT_TYPES.txt
         break
 
