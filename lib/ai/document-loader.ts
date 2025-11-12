@@ -35,6 +35,9 @@ export async function loadDocument(storagePath: string): Promise<LoadedDocument>
   const originalName = metadata.metadata?.originalName;
   const name = typeof originalName === "string" ? originalName : file.name;
 
+  // Get file extension for fallback detection
+  const extension = name.toLowerCase().substring(name.lastIndexOf("."));
+
   // Download file
   const [buffer] = await file.download();
 
@@ -51,11 +54,18 @@ export async function loadDocument(storagePath: string): Promise<LoadedDocument>
     // For DOCX/DOC, we'd need a library like mammoth
     // For now, treat as text or return a placeholder
     content = buffer.toString("utf-8");
-  } else if (contentType === "text/plain") {
-    // Plain text
+  } else if (
+    contentType === "text/plain" ||
+    contentType === "text/markdown" ||
+    contentType === "text/x-markdown"
+  ) {
+    // Plain text or markdown
+    content = buffer.toString("utf-8");
+  } else if (contentType === "application/octet-stream" && (extension === ".txt" || extension === ".md")) {
+    // Fallback for text/markdown files with generic MIME type
     content = buffer.toString("utf-8");
   } else {
-    throw new Error(`Unsupported file type: ${contentType}`);
+    throw new Error(`Unsupported file type: ${contentType} (file: ${name})`);
   }
 
   return {
