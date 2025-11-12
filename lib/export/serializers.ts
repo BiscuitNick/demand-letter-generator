@@ -2,6 +2,11 @@ import { convert } from 'html-to-text'
 import { JSDOM } from 'jsdom'
 
 /**
+ * Special marker for blank lines in content
+ */
+export const BLANK_LINE_MARKER = '___BLANK_LINE___'
+
+/**
  * Convert HTML to plain text
  */
 export function htmlToPlaintext(html: string): string {
@@ -92,7 +97,13 @@ export function parseHtmlToSections(html: string): DocumentSection[] {
         })
       } else if (tagName === 'p') {
         const content = element.textContent?.trim()
-        if (content) {
+        // Check if this is a blank line marker
+        if (content === BLANK_LINE_MARKER) {
+          sections.push({
+            type: 'paragraph',
+            content: '', // Empty content for blank line
+          })
+        } else if (content) {
           sections.push({
             type: 'paragraph',
             content,

@@ -24,20 +24,7 @@ export async function htmlToDocx(html: string, options: DocxOptions = {}): Promi
 
   const paragraphs: Paragraph[] = []
 
-  // Add document title if provided or extracted
-  const title = options.title || metadata.title
-  if (title) {
-    paragraphs.push(
-      new Paragraph({
-        text: title,
-        heading: HeadingLevel.TITLE,
-        alignment: AlignmentType.CENTER,
-        spacing: {
-          after: convertInchesToTwip(0.2),
-        },
-      })
-    )
-  }
+  // Don't add document title to the content
 
   // Convert sections to DOCX paragraphs
   for (const section of sections) {
@@ -54,18 +41,34 @@ export async function htmlToDocx(html: string, options: DocxOptions = {}): Promi
         })
       )
     } else if (section.type === 'paragraph') {
-      paragraphs.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: section.content,
-            }),
-          ],
-          spacing: {
-            after: convertInchesToTwip(0.1),
-          },
-        })
-      )
+      // Handle empty paragraphs (blank lines)
+      if (!section.content || section.content.trim() === '') {
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: '',
+              }),
+            ],
+            spacing: {
+              after: convertInchesToTwip(0.1),
+            },
+          })
+        )
+      } else {
+        paragraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: section.content,
+              }),
+            ],
+            spacing: {
+              after: convertInchesToTwip(0.1),
+            },
+          })
+        )
+      }
     } else if (section.type === 'list' && section.items) {
       // Add list items as paragraphs with bullets
       for (const item of section.items) {
@@ -101,7 +104,7 @@ export async function htmlToDocx(html: string, options: DocxOptions = {}): Promi
       },
     ],
     creator: options.author || 'Demand Letter Generator',
-    title: title,
+    title: options.title || undefined,
     description: options.description,
   })
 

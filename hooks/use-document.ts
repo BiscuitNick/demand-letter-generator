@@ -96,6 +96,23 @@ export function useDocument(docId: string) {
     }
   };
 
+  /**
+   * Update document title
+   */
+  const updateTitle = async (title: string) => {
+    if (!docId) return;
+
+    try {
+      const docRef = doc(db, "documents", docId);
+      await updateDoc(docRef, { title });
+      toast.success("Title updated");
+    } catch (err) {
+      console.error("Error updating title:", err);
+      toast.error("Failed to update title");
+      throw err;
+    }
+  };
+
   return {
     document,
     loading,
@@ -103,5 +120,6 @@ export function useDocument(docId: string) {
     updateFacts,
     updateOutline,
     updateContent,
+    updateTitle,
   };
 }

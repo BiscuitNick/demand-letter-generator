@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { htmlToPdf } from '@/lib/export/pdf-renderer'
 import { htmlToDocx } from '@/lib/export/docx-renderer'
-import { htmlToPlaintext } from '@/lib/export/serializers'
+import { htmlToPlaintext, BLANK_LINE_MARKER } from '@/lib/export/serializers'
 import { requireAuth } from '@/lib/auth-helpers'
 import { getAdminDb } from '@/lib/firebase-admin'
 
@@ -81,7 +81,18 @@ export async function GET(request: NextRequest) {
     // The export functions expect HTML, so wrap plain text in basic HTML structure
     const htmlContent = content.includes('<') && content.includes('>')
       ? content // Already HTML
-      : `<div>${content.split('\n\n').map((p: string) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('')}</div>` // Convert plain text to HTML
+      : (() => {
+          // Split content by newlines and create a paragraph for each line
+          // Empty lines use a special marker that won't be filtered out
+          const lines = content.split('\n')
+          const paragraphs = lines.map((line: string) => {
+            const trimmed = line.trim()
+            // Empty lines get a special marker
+            if (!trimmed) return `<p>${BLANK_LINE_MARKER}</p>`
+            return `<p>${trimmed}</p>`
+          })
+          return `<div>${paragraphs.join('')}</div>`
+        })()
 
     // Export based on format
     let buffer: Buffer

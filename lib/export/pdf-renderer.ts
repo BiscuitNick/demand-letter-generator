@@ -72,18 +72,7 @@ export async function htmlToPdf(html: string, options: PdfOptions = {}): Promise
     return lines
   }
 
-  // Add title if available
-  if (title && title !== 'Document') {
-    checkNewPage(40)
-    page.drawText(title, {
-      x: margin,
-      y: yPosition,
-      size: 20,
-      font: fontBold,
-      color: rgb(0, 0, 0),
-    })
-    yPosition -= 40
-  }
+  // Don't render the document title in the PDF content
 
   // Render sections
   for (const section of sections) {
@@ -106,21 +95,28 @@ export async function htmlToPdf(html: string, options: PdfOptions = {}): Promise
       yPosition -= 5 // Extra spacing after heading
     } else if (section.type === 'paragraph') {
       const fontSize = 11
-      const lines = wrapText(section.content, contentWidth, fontSize)
+      const lineSpacing = fontSize + 3
 
-      for (const line of lines) {
-        checkNewPage(fontSize + 3)
-        page.drawText(line, {
-          x: margin,
-          y: yPosition,
-          size: fontSize,
-          font: font,
-          color: rgb(0, 0, 0),
-        })
-        yPosition -= fontSize + 3
+      // Handle empty paragraphs (blank lines)
+      if (!section.content || section.content.trim() === '') {
+        // Create a visible blank line with the same height as a text line
+        checkNewPage(lineSpacing)
+        yPosition -= lineSpacing
+      } else {
+        const lines = wrapText(section.content, contentWidth, fontSize)
+
+        for (const line of lines) {
+          checkNewPage(lineSpacing)
+          page.drawText(line, {
+            x: margin,
+            y: yPosition,
+            size: fontSize,
+            font: font,
+            color: rgb(0, 0, 0),
+          })
+          yPosition -= lineSpacing
+        }
       }
-
-      yPosition -= 5 // Extra spacing after paragraph
     } else if (section.type === 'list' && section.items) {
       const fontSize = 11
 
