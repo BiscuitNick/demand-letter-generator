@@ -43,6 +43,7 @@ export function FileDropzone() {
           [".docx"],
         "application/msword": [".doc"],
         "text/plain": [".txt"],
+        "text/markdown": [".md"],
       },
       maxSize: MAX_FILE_SIZE,
       multiple: true,
@@ -106,7 +107,7 @@ export function FileDropzone() {
       {isDragReject && (
         <Alert variant="destructive">
           <AlertDescription>
-            Some files were rejected. Please only upload PDF, DOCX, or TXT
+            Some files were rejected. Please only upload PDF, DOCX, TXT, or MD
             files under {formatFileSize(MAX_FILE_SIZE)}.
           </AlertDescription>
         </Alert>

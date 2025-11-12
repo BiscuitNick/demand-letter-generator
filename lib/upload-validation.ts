@@ -11,12 +11,14 @@ export const ALLOWED_MIME_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
   "application/msword", // .doc
   "text/plain",
+  "text/markdown",
+  "text/x-markdown", // Alternative markdown MIME type
 ] as const;
 
 /**
  * Allowed file extensions
  */
-export const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt"] as const;
+export const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".doc", ".txt", ".md"] as const;
 
 /**
  * Maximum file size (50MB)
@@ -76,7 +78,9 @@ export function validateFile(file: File): ValidationResult {
 
   // Check file extension
   const extension = getFileExtension(file.name);
-  if (!ALLOWED_EXTENSIONS.includes(extension as (typeof ALLOWED_EXTENSIONS)[number])) {
+  const hasValidExtension = ALLOWED_EXTENSIONS.includes(extension as (typeof ALLOWED_EXTENSIONS)[number]);
+
+  if (!hasValidExtension) {
     errors.push({
       type: "invalid_extension",
       message: `File extension "${extension}" is not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(", ")}`,
@@ -84,11 +88,16 @@ export function validateFile(file: File): ValidationResult {
     });
   }
 
-  // Check MIME type
-  if (!ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number])) {
+  // Check MIME type (but be lenient for .md files since browsers send various MIME types)
+  const hasValidMimeType = ALLOWED_MIME_TYPES.includes(file.type as (typeof ALLOWED_MIME_TYPES)[number]);
+  const isMarkdownFile = extension === ".md";
+
+  // For markdown files, accept if extension is valid even if MIME type is unrecognized
+  // For other files, enforce MIME type validation
+  if (!hasValidMimeType && !(isMarkdownFile && hasValidExtension)) {
     errors.push({
       type: "invalid_type",
-      message: `File type "${file.type}" is not allowed. Please upload PDF, DOCX, or TXT files.`,
+      message: `File type "${file.type}" is not allowed. Please upload PDF, DOCX, TXT, or MD files.`,
       fileName: file.name,
     });
   }

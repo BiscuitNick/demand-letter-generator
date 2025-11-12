@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useDocument } from "@/hooks/use-document";
+import { useSources } from "@/hooks/use-sources";
 import { useGenerate } from "@/hooks/use-generate";
 import { Sparkles, FileText } from "lucide-react";
 
@@ -14,6 +15,7 @@ interface FactsTabProps {
 
 export function FactsTab({ docId }: FactsTabProps) {
   const { document, loading, updateFacts } = useDocument(docId);
+  const { hasSources, loading: loadingSources } = useSources(docId);
   const { generate, loading: generating } = useGenerate(docId);
 
   const handleToggleFact = async (factId: string) => {
@@ -30,7 +32,7 @@ export function FactsTab({ docId }: FactsTabProps) {
     await generate(["extract"]);
   };
 
-  if (loading) {
+  if (loading || loadingSources) {
     return (
       <Card>
         <CardContent className="pt-6">
@@ -41,7 +43,6 @@ export function FactsTab({ docId }: FactsTabProps) {
   }
 
   const facts = document?.facts || [];
-  const hasSources = document?.sources && document.sources.length > 0;
 
   return (
     <div className="space-y-6">
