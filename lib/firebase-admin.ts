@@ -29,10 +29,21 @@ function initializeFirebaseAdmin(): App {
     return apps[0];
   }
 
+  // Get storage bucket from environment (same as client config)
+  const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+
+  if (!storageBucket) {
+    throw new Error(
+      "NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET is not configured. " +
+      "This is required for Firebase Storage operations."
+    );
+  }
+
   // Method 1: Use GOOGLE_APPLICATION_CREDENTIALS if available
   if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
     return initializeApp({
       projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+      storageBucket,
     });
   }
 
@@ -57,6 +68,7 @@ function initializeFirebaseAdmin(): App {
       privateKey: privateKey.replace(/\\n/g, "\n"),
     }),
     projectId,
+    storageBucket,
   });
 }
 

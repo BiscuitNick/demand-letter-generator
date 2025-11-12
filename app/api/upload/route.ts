@@ -15,8 +15,8 @@ import {
  */
 export async function POST(req: NextRequest) {
   try {
-    // Require authentication
-    const user = await requireAuth();
+    // Require authentication (checks Authorization header)
+    const user = await requireAuth(req);
 
     // Parse multipart form data
     const formData = await req.formData();

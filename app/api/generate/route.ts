@@ -12,8 +12,8 @@ import { Timestamp } from "firebase-admin/firestore";
  */
 export async function POST(req: NextRequest) {
   try {
-    // Require authentication
-    const user = await requireAuth();
+    // Require authentication (checks Authorization header)
+    const user = await requireAuth(req);
 
     const body = await req.json();
     const { docId, steps, instructions } = body as {

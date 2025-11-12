@@ -9,8 +9,8 @@ import { getAdminDb } from "@/lib/firebase-admin";
  */
 export async function POST(req: NextRequest) {
   try {
-    // Require authentication
-    const user = await requireAuth();
+    // Require authentication (checks Authorization header)
+    const user = await requireAuth(req);
 
     const body = await req.json();
     const { docId, files } = body;

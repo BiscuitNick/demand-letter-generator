@@ -15,7 +15,6 @@ import {
 import {
   NavigationMenu,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
@@ -77,16 +76,15 @@ export function Header({ user, onSignOut }: HeaderProps) {
               <NavigationMenuList>
                 {navigationLinks.map((link) => (
                   <NavigationMenuItem key={link.href}>
-                    <Link href={link.href}>
-                      <NavigationMenuLink
-                        className={cn(
-                          navigationMenuTriggerStyle(),
-                          isActive(link.href) &&
-                            'bg-accent text-accent-foreground'
-                        )}
-                      >
-                        {link.label}
-                      </NavigationMenuLink>
+                    <Link
+                      href={link.href}
+                      className={cn(
+                        navigationMenuTriggerStyle(),
+                        isActive(link.href) &&
+                          'bg-accent text-accent-foreground'
+                      )}
+                    >
+                      {link.label}
                     </Link>
                   </NavigationMenuItem>
                 ))}

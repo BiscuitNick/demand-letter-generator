@@ -15,21 +15,42 @@ export interface UserSession {
 }
 
 /**
- * Get the current user session from the Firebase ID token cookie.
+ * Get the current user session from the Firebase ID token cookie or Authorization header.
  * Returns null if no valid session is found.
  *
+ * @param request - Optional request object to check Authorization header
  * @returns UserSession object or null
  */
-export async function getUserSession(): Promise<UserSession | null> {
+export async function getUserSession(
+  request?: Request
+): Promise<UserSession | null> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("firebase-token")?.value;
+    let decodedToken;
 
-    if (!token) {
-      return null;
+    // First, try to get token from Authorization header if request is provided
+    if (request) {
+      const authHeader = request.headers.get("Authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        const token = authHeader.substring(7);
+        try {
+          decodedToken = await getAdminAuth().verifyIdToken(token);
+        } catch (error) {
+          console.error("Failed to verify Authorization header token:", error);
+        }
+      }
     }
 
-    const decodedToken = await getAdminAuth().verifyIdToken(token);
+    // Fall back to cookie if no valid Authorization header token
+    if (!decodedToken) {
+      const cookieStore = await cookies();
+      const token = cookieStore.get("firebase-token")?.value;
+
+      if (!token) {
+        return null;
+      }
+
+      decodedToken = await getAdminAuth().verifyIdToken(token);
+    }
 
     return {
       uid: decodedToken.uid,
@@ -49,11 +70,12 @@ export async function getUserSession(): Promise<UserSession | null> {
  * Require authentication for a route or action.
  * Throws an error if no valid session is found.
  *
+ * @param request - Optional request object to check Authorization header
  * @returns UserSession object
  * @throws Error if user is not authenticated
  */
-export async function requireAuth(): Promise<UserSession> {
-  const session = await getUserSession();
+export async function requireAuth(request?: Request): Promise<UserSession> {
+  const session = await getUserSession(request);
 
   if (!session) {
     throw new Error("Unauthorized: Authentication required");
