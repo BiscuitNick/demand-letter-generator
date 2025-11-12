@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Plus, Edit, Trash2, Star, StarOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -36,6 +37,14 @@ import { Loader2, MoreVertical } from 'lucide-react'
  * Templates management page
  */
 export default function TemplatesPage() {
+  return (
+    <ProtectedRoute>
+      <TemplatesPageContent />
+    </ProtectedRoute>
+  )
+}
+
+function TemplatesPageContent() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
   const { toast } = useToast()

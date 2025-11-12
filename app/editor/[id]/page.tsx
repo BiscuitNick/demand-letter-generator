@@ -1,6 +1,8 @@
 'use client'
 
 import { use } from 'react'
+import { ProtectedRoute } from '@/components/auth/protected-route'
+import { useAuth } from '@/contexts/auth-context'
 import { EditorWithComments } from '@/components/editor/EditorWithComments'
 import { db } from '@/lib/firebase-client'
 
@@ -13,15 +15,29 @@ interface PageProps {
  * Implements Google Docs-style real-time collaboration with inline commenting.
  */
 export default function EditorPage({ params }: PageProps) {
-  const { id } = use(params)
+  return (
+    <ProtectedRoute>
+      <EditorPageContent params={params} />
+    </ProtectedRoute>
+  )
+}
 
-  // For demo purposes, use a mock user
-  // In production, get this from your auth system
-  const mockUser = {
-    id: 'user-1',
-    name: 'Demo User',
-    color: '#4F46E5', // Indigo color
-  }
+function EditorPageContent({ params }: PageProps) {
+  const { id } = use(params)
+  const { user } = useAuth()
+
+  // Use authenticated user data
+  const userData = user
+    ? {
+        id: user.uid,
+        name: user.displayName || user.email || 'User',
+        color: '#4F46E5', // Indigo color - could be dynamic per user
+      }
+    : {
+        id: 'anonymous',
+        name: 'Anonymous',
+        color: '#6B7280',
+      }
 
   return (
     <div className="h-screen flex flex-col">
@@ -38,7 +54,7 @@ export default function EditorPage({ params }: PageProps) {
         <EditorWithComments
           docId={id}
           db={db}
-          user={mockUser}
+          user={userData}
           onSave={(content) => {
             console.log('Document saved:', content)
           }}
@@ -46,9 +62,8 @@ export default function EditorPage({ params }: PageProps) {
             console.error('Editor error:', error)
           }}
           checkPermissions={async () => {
-            // Implement permission checking logic
-            // For now, return true (allow all edits)
-            return true
+            // Check if user is authenticated and is owner or collaborator
+            return !!user
           }}
         />
       </div>

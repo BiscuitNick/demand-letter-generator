@@ -1,3 +1,7 @@
+'use client'
+
+import { use } from 'react';
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UploadTab } from "./upload-tab";
 import { FactsTab } from "./facts-tab";
@@ -10,8 +14,16 @@ interface DocumentPageProps {
   }>;
 }
 
-export default async function DocumentPage({ params }: DocumentPageProps) {
-  const { id } = await params;
+export default function DocumentPage({ params }: DocumentPageProps) {
+  return (
+    <ProtectedRoute>
+      <DocumentPageContent params={params} />
+    </ProtectedRoute>
+  );
+}
+
+function DocumentPageContent({ params }: DocumentPageProps) {
+  const { id } = use(params);
 
   return (
     <div className="container mx-auto py-8">
