@@ -14,6 +14,9 @@ export function matchPlaceholderToField(placeholderText: string): LawyerField | 
     lawfirm: ['lawfirm', 'firm', 'office', 'practice'],
     address_1: ['address', 'street', 'location', 'addr'],
     address_2: ['address2', 'suite', 'unit', 'apt'],
+    city: ['city', 'town', 'municipality'],
+    state: ['state', 'province'],
+    zip: ['zip', 'zipcode', 'postal', 'postalcode'],
     email: ['email', 'mail'],
     phone_number: ['phone', 'tel', 'number', 'contact'],
   }
@@ -59,6 +62,9 @@ export function getAllLawyerFieldOptions(lawyer: Lawyer): LawyerFieldOption[] {
     'lawfirm',
     'address_1',
     'address_2',
+    'city',
+    'state',
+    'zip',
     'email',
     'phone_number',
   ]
@@ -83,6 +89,9 @@ export function formatFieldName(field: LawyerField): string {
     lawfirm: 'Law Firm',
     address_1: 'Address Line 1',
     address_2: 'Address Line 2',
+    city: 'City',
+    state: 'State',
+    zip: 'ZIP Code',
     email: 'Email',
     phone_number: 'Phone Number',
   }

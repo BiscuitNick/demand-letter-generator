@@ -7,6 +7,9 @@ export interface Lawyer {
   lawfirm: string
   address_1: string
   address_2: string
+  city: string
+  state: string
+  zip: string
   email: string
   phone_number: string
   createdBy: string
@@ -20,6 +23,9 @@ export type LawyerField =
   | 'lawfirm'
   | 'address_1'
   | 'address_2'
+  | 'city'
+  | 'state'
+  | 'zip'
   | 'email'
   | 'phone_number'
 

@@ -37,6 +37,9 @@ export function LawyerFormModal({
     lawfirm: '',
     address_1: '',
     address_2: '',
+    city: '',
+    state: '',
+    zip: '',
     email: '',
     phone_number: '',
   })
@@ -51,6 +54,9 @@ export function LawyerFormModal({
         lawfirm: lawyer.lawfirm || '',
         address_1: lawyer.address_1 || '',
         address_2: lawyer.address_2 || '',
+        city: lawyer.city || '',
+        state: lawyer.state || '',
+        zip: lawyer.zip || '',
         email: lawyer.email || '',
         phone_number: lawyer.phone_number || '',
       })
@@ -61,6 +67,9 @@ export function LawyerFormModal({
         lawfirm: '',
         address_1: '',
         address_2: '',
+        city: '',
+        state: '',
+        zip: '',
         email: '',
         phone_number: '',
       })
@@ -170,6 +179,39 @@ export function LawyerFormModal({
               value={formData.address_2}
               onChange={(e) => setFormData({ ...formData, address_2: e.target.value })}
               placeholder="Suite 100"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                placeholder="Los Angeles"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="state">State</Label>
+              <Input
+                id="state"
+                value={formData.state}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                placeholder="CA"
+                maxLength={2}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="zip">ZIP Code</Label>
+            <Input
+              id="zip"
+              value={formData.zip}
+              onChange={(e) => setFormData({ ...formData, zip: e.target.value })}
+              placeholder="90210"
             />
           </div>
 
