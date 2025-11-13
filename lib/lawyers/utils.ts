@@ -8,17 +8,18 @@ export function matchPlaceholderToField(placeholderText: string): LawyerField | 
   const normalized = placeholderText.toLowerCase().replace(/[_\s-]/g, '')
 
   // Define keyword patterns for each field
+  // Order matters - more specific patterns should come first
   const patterns: Record<LawyerField, string[]> = {
-    name: ['name', 'lawyer', 'attorney', 'counsel'],
-    title: ['title', 'position', 'role'],
-    lawfirm: ['lawfirm', 'firm', 'office', 'practice'],
-    address_1: ['address', 'street', 'location', 'addr'],
-    address_2: ['address2', 'suite', 'unit', 'apt'],
-    city: ['city', 'town', 'municipality'],
-    state: ['state', 'province'],
-    zip: ['zip', 'zipcode', 'postal', 'postalcode'],
-    email: ['email', 'mail'],
+    email: ['email', 'mail'],  // Check email first before address
     phone_number: ['phone', 'tel', 'number', 'contact'],
+    zip: ['zip', 'zipcode', 'postal', 'postalcode'],
+    state: ['state', 'province'],
+    city: ['city', 'town', 'municipality'],
+    address_2: ['address2', 'suite', 'unit', 'apt'],
+    address_1: ['address', 'street', 'location', 'addr'],  // Check address after email
+    lawfirm: ['lawfirm', 'firm', 'office', 'practice'],
+    title: ['title', 'position', 'role'],
+    name: ['name', 'lawyer', 'attorney', 'counsel'],
   }
 
   // Try to find a matching field
