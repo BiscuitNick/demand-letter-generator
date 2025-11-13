@@ -69,8 +69,8 @@ export function LawyersWidget() {
               </Button>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
+            <div className="flex flex-col items-center space-y-2">
+              <div className="max-h-[300px] w-full max-w-[680px] overflow-y-auto space-y-2 pr-2">
                 {lawyers.map((lawyer) => (
                   <div
                     key={lawyer.id}
@@ -102,7 +102,7 @@ export function LawyersWidget() {
                   </div>
                 ))}
               </div>
-              <Button onClick={handleAdd} className="w-full" variant="outline">
+              <Button onClick={handleAdd} className="w-full max-w-[680px]" variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Lawyer
               </Button>

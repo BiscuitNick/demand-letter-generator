@@ -231,6 +231,9 @@ function DashboardContent() {
                             <Clock className="h-3 w-3" />
                             {formatDate(doc.updatedAt)}
                           </span>
+                          <Badge variant={doc.status === 'final' ? 'default' : 'secondary'}>
+                            {doc.status}
+                          </Badge>
                           {doc.collaborators && doc.collaborators.length > 0 && (
                             <span className="flex items-center gap-1">
                               <User className="h-3 w-3" />
@@ -240,9 +243,6 @@ function DashboardContent() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge variant={doc.status === 'final' ? 'default' : 'secondary'}>
-                          {doc.status}
-                        </Badge>
                         <Button
                           variant="ghost"
                           size="sm"
