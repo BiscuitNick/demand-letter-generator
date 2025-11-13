@@ -166,17 +166,38 @@ export function DraftEditor({ content, onChange, className }: DraftEditorProps) 
 /**
  * Process content to wrap bracketed placeholders with placeholder marks.
  * Converts [PLACEHOLDER] to marked spans with unique IDs.
+ * Also handles converting plain text line breaks to HTML.
  */
 function processContentWithPlaceholders(content: string): string {
   if (!content) return ''
 
-  // Match [TEXT] patterns
+  let processedContent = content
+
+  // Check if content is already HTML (contains HTML tags)
+  const isHtml = /<[^>]+>/.test(content)
+
+  if (!isHtml) {
+    // Convert plain text to HTML paragraphs
+    // Split by double newlines for paragraphs
+    const paragraphs = content.split(/\n\n+/)
+    processedContent = paragraphs
+      .map((para) => {
+        // Replace single newlines with <br> within paragraphs
+        const withBreaks = para.replace(/\n/g, '<br>')
+        return `<p>${withBreaks}</p>`
+      })
+      .join('')
+  }
+
+  // Now wrap placeholders
   const placeholderRegex = /\[([^\]]+)\]/g
   let match
-  let processedContent = content
   const replacements: Array<{ original: string; replacement: string }> = []
 
-  while ((match = placeholderRegex.exec(content)) !== null) {
+  // Reset regex lastIndex
+  placeholderRegex.lastIndex = 0
+
+  while ((match = placeholderRegex.exec(processedContent)) !== null) {
     const fullMatch = match[0]
     const innerText = match[1]
     const id = `placeholder-${Math.random().toString(36).substr(2, 9)}`
@@ -186,7 +207,7 @@ function processContentWithPlaceholders(content: string): string {
     replacements.push({ original: fullMatch, replacement })
   }
 
-  // Apply replacements
+  // Apply replacements (only first occurrence to avoid issues with duplicates)
   replacements.forEach(({ original, replacement }) => {
     processedContent = processedContent.replace(original, replacement)
   })
