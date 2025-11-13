@@ -177,14 +177,16 @@ function processContentWithPlaceholders(content: string): string {
   const isHtml = /<[^>]+>/.test(content)
 
   if (!isHtml) {
-    // Convert plain text to HTML paragraphs
-    // Split by double newlines for paragraphs
-    const paragraphs = content.split(/\n\n+/)
-    processedContent = paragraphs
-      .map((para) => {
-        // Replace single newlines with <br> within paragraphs
-        const withBreaks = para.replace(/\n/g, '<br>')
-        return `<p>${withBreaks}</p>`
+    // Convert plain text to HTML with proper line breaks
+    // Split by newlines and create paragraphs for each line
+    const lines = content.split(/\n/)
+    processedContent = lines
+      .map((line) => {
+        // Empty lines become empty paragraphs to preserve spacing
+        if (line.trim() === '') {
+          return '<p><br></p>'
+        }
+        return `<p>${line}</p>`
       })
       .join('')
   }
