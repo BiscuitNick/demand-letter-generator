@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { LawyersWidget } from "@/components/lawyers/LawyersWidget";
 
 interface Document {
   id: string;
@@ -27,12 +28,6 @@ interface Document {
   updatedAt: Timestamp;
   ownerId: string;
   collaborators?: string[];
-}
-
-interface Template {
-  id: string;
-  name: string;
-  isDefault?: boolean;
 }
 
 export default function DashboardPage() {
@@ -47,7 +42,6 @@ function DashboardContent() {
   const { user } = useAuth();
   const router = useRouter();
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
@@ -76,26 +70,8 @@ function DashboardContent() {
       setLoading(false);
     });
 
-    // Subscribe to templates
-    const templatesQuery = query(
-      collection(db, 'templates'),
-      orderBy('createdAt', 'desc'),
-      limit(3)
-    );
-
-    const unsubscribeTemplates = onSnapshot(templatesQuery, (snapshot) => {
-      const temps = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Template));
-      setTemplates(temps);
-    }, (error) => {
-      console.error('Error fetching templates:', error);
-    });
-
     return () => {
       unsubscribeDocs();
-      unsubscribeTemplates();
     };
   }, [user]);
 
@@ -296,52 +272,8 @@ function DashboardContent() {
           </CardContent>
         </Card>
 
-        {/* Templates Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Templates</CardTitle>
-            <CardDescription>
-              Saved templates for quick generation
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {templates.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground mb-4">
-                  No templates yet.
-                </p>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href="/templates">
-                    Manage Templates
-                  </Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {templates.map((template) => (
-                  <div
-                    key={template.id}
-                    className="p-3 rounded-md border text-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{template.name}</span>
-                      {template.isDefault && (
-                        <Badge variant="secondary" className="text-xs">
-                          Default
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" className="w-full mt-4" asChild>
-                  <Link href="/templates">
-                    View All Templates
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Lawyers Card */}
+        <LawyersWidget />
 
         {/* Quick Stats Card */}
         <Card className="col-span-full">
@@ -367,8 +299,8 @@ function DashboardContent() {
                 <div className="text-sm text-muted-foreground">Completed</div>
               </div>
               <div className="text-center p-4 rounded-lg bg-muted">
-                <div className="text-3xl font-bold">{templates.length}</div>
-                <div className="text-sm text-muted-foreground">Templates</div>
+                <div className="text-3xl font-bold">0</div>
+                <div className="text-sm text-muted-foreground">Lawyers</div>
               </div>
             </div>
           </CardContent>
