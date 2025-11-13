@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
+import Document from '@tiptap/extension-document'
+import Paragraph from '@tiptap/extension-paragraph'
+import Text from '@tiptap/extension-text'
+import HardBreak from '@tiptap/extension-hard-break'
 import { PlaceholderMark } from '@/lib/editor/extensions/placeholder-mark'
 import { PlaceholderDialog } from './PlaceholderPopover'
 import type { Editor } from '@tiptap/react'
@@ -26,7 +29,10 @@ export function DraftEditor({ content, onChange, className }: DraftEditorProps) 
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      Document,
+      Paragraph,
+      Text,
+      HardBreak,
       PlaceholderMark,
     ],
     content: processContentWithPlaceholders(content),
@@ -166,7 +172,7 @@ export function DraftEditor({ content, onChange, className }: DraftEditorProps) 
 /**
  * Process content to wrap bracketed placeholders with placeholder marks.
  * Converts [PLACEHOLDER] to marked spans with unique IDs.
- * Also handles converting plain text line breaks to HTML.
+ * Also handles converting plain text line breaks to HTML using hard breaks.
  */
 function processContentWithPlaceholders(content: string): string {
   if (!content) return ''
@@ -177,18 +183,11 @@ function processContentWithPlaceholders(content: string): string {
   const isHtml = /<[^>]+>/.test(content)
 
   if (!isHtml) {
-    // Convert plain text to HTML with proper line breaks
-    // Split by newlines and create paragraphs for each line
-    const lines = content.split(/\n/)
-    processedContent = lines
-      .map((line) => {
-        // Empty lines become empty paragraphs to preserve spacing
-        if (line.trim() === '') {
-          return '<p><br></p>'
-        }
-        return `<p>${line}</p>`
-      })
-      .join('')
+    // Convert plain text to HTML using hard breaks for line breaks
+    // Replace newlines with <br> tags
+    processedContent = content.replace(/\n/g, '<br>')
+    // Wrap in a single paragraph
+    processedContent = `<p>${processedContent}</p>`
   }
 
   // Now wrap placeholders
