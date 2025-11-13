@@ -215,10 +215,81 @@ export function DraftTab({ docId }: DraftTabProps) {
               <div className="space-y-4">
                 {/* Template and Instructions Controls */}
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
+                  <div className="flex flex-col gap-2">
                     <Label htmlFor="initial-template-select">Template</Label>
+                    <div className="flex flex-col gap-2 flex-1">
+                      <Select value={selectedTone} onValueChange={setSelectedTone}>
+                        <SelectTrigger id="initial-template-select" className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="professional">Professional</SelectItem>
+                          <SelectItem value="assertive">Assertive</SelectItem>
+                          <SelectItem value="empathetic">Empathetic</SelectItem>
+                          <SelectItem value="custom">Custom</SelectItem>
+                          {templates.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
+                                Saved Templates
+                              </div>
+                              {templates.map((template) => (
+                                <SelectItem key={template.id} value={template.id!}>
+                                  {template.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {selectedTone === "custom" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsSaveModalOpen(true)}
+                          className="w-full"
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Template
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 flex flex-col gap-2">
+                    <Label htmlFor="initial-instructions">Instructions</Label>
+                    <Textarea
+                      id="initial-instructions"
+                      value={getCurrentInstructions()}
+                      onChange={(e) => setCustomInstructions(e.target.value)}
+                      readOnly={selectedTone !== "custom"}
+                      className={`flex-1 resize-none ${selectedTone !== "custom" ? "bg-muted cursor-not-allowed" : ""}`}
+                      placeholder={selectedTone === "custom" ? "Enter custom tone instructions..." : ""}
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleGenerateDraft}
+                  disabled={generating}
+                  className="w-full"
+                  size="lg"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  {generating ? "Composing..." : "Compose Draft"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {content && (
+            <div className="space-y-4">
+              {/* Template and Instructions Controls */}
+              <div className="grid grid-cols-3 gap-4 pb-4 border-b">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="template-select">Template</Label>
+                  <div className="flex flex-col gap-2 flex-1">
                     <Select value={selectedTone} onValueChange={setSelectedTone}>
-                      <SelectTrigger id="initial-template-select">
+                      <SelectTrigger id="template-select" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -252,85 +323,16 @@ export function DraftTab({ docId }: DraftTabProps) {
                       </Button>
                     )}
                   </div>
-
-                  <div className="col-span-2 space-y-2">
-                    <Label htmlFor="initial-instructions">Instructions</Label>
-                    <Textarea
-                      id="initial-instructions"
-                      value={getCurrentInstructions()}
-                      onChange={(e) => setCustomInstructions(e.target.value)}
-                      rows={3}
-                      readOnly={selectedTone !== "custom"}
-                      className={selectedTone !== "custom" ? "bg-muted cursor-not-allowed" : ""}
-                      placeholder={selectedTone === "custom" ? "Enter custom tone instructions..." : ""}
-                    />
-                  </div>
                 </div>
 
-                <Button
-                  onClick={handleGenerateDraft}
-                  disabled={generating}
-                  className="w-full"
-                  size="lg"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {generating ? "Composing..." : "Compose Draft"}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {content && (
-            <div className="space-y-4">
-              {/* Template and Instructions Controls */}
-              <div className="grid grid-cols-3 gap-4 pb-4 border-b">
-                <div className="space-y-2">
-                  <Label htmlFor="template-select">Template</Label>
-                  <Select value={selectedTone} onValueChange={setSelectedTone}>
-                    <SelectTrigger id="template-select">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="professional">Professional</SelectItem>
-                      <SelectItem value="assertive">Assertive</SelectItem>
-                      <SelectItem value="empathetic">Empathetic</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                      {templates.length > 0 && (
-                        <>
-                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                            Saved Templates
-                          </div>
-                          {templates.map((template) => (
-                            <SelectItem key={template.id} value={template.id!}>
-                              {template.name}
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {selectedTone === "custom" && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsSaveModalOpen(true)}
-                      className="w-full"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Template
-                    </Button>
-                  )}
-                </div>
-
-                <div className="col-span-2 space-y-2">
+                <div className="col-span-2 flex flex-col gap-2">
                   <Label htmlFor="instructions">Instructions</Label>
                   <Textarea
                     id="instructions"
                     value={getCurrentInstructions()}
                     onChange={(e) => setCustomInstructions(e.target.value)}
-                    rows={3}
                     readOnly={selectedTone !== "custom"}
-                    className={selectedTone !== "custom" ? "bg-muted cursor-not-allowed" : ""}
+                    className={`flex-1 resize-none ${selectedTone !== "custom" ? "bg-muted cursor-not-allowed" : ""}`}
                     placeholder={selectedTone === "custom" ? "Enter custom tone instructions..." : ""}
                   />
                 </div>
