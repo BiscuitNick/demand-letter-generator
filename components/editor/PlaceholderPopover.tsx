@@ -13,15 +13,21 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Check, X, ChevronDown, ChevronUp, Briefcase } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useLawyers } from '@/lib/lawyers/hooks/useLawyers'
 import { db } from '@/lib/firebase-client'
 import {
   matchPlaceholderToField,
-  getLawyerFieldOptions,
   getAllLawyerFieldOptions,
   formatFieldName,
 } from '@/lib/lawyers/utils'
-import type { LawyerFieldOption } from '@/lib/lawyers/types'
+import type { LawyerFieldOption, Lawyer } from '@/lib/lawyers/types'
 
 interface PlaceholderDialogProps {
   open: boolean
@@ -44,22 +50,30 @@ export function PlaceholderDialog({
 }: PlaceholderDialogProps) {
   const [value, setValue] = useState(placeholderText)
   const [showAllFields, setShowAllFields] = useState(false)
+  const [selectedLawyerId, setSelectedLawyerId] = useState<string>('')
   const { lawyers } = useLawyers(db)
 
   // Smart match the placeholder to a field
   const matchedField = matchPlaceholderToField(placeholderText)
 
-  // Get lawyer options based on matched field
-  const lawyerOptions: LawyerFieldOption[] = matchedField
-    ? getLawyerFieldOptions(lawyers, matchedField)
-    : []
+  // Get the selected lawyer
+  const selectedLawyer = lawyers.find((l) => l.id === selectedLawyerId)
+
+  // Get matched field value for selected lawyer
+  const matchedFieldValue = selectedLawyer && matchedField
+    ? selectedLawyer[matchedField]
+    : null
 
   useEffect(() => {
     if (open) {
       setValue(placeholderText)
       setShowAllFields(false)
+      // Auto-select first lawyer if available
+      if (lawyers.length > 0 && !selectedLawyerId) {
+        setSelectedLawyerId(lawyers[0].id!)
+      }
     }
-  }, [open, placeholderText])
+  }, [open, placeholderText, lawyers, selectedLawyerId])
 
   const handleSave = () => {
     if (value.trim()) {
@@ -98,101 +112,119 @@ export function PlaceholderDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
-          {/* Lawyer Options Section */}
+          {/* Lawyer Selection Section */}
           {lawyers.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-2">
+            <div className="space-y-3">
+              {/* Lawyer Selector */}
+              <div className="space-y-2">
+                <Label htmlFor="lawyer-select" className="flex items-center gap-2">
                   <Briefcase className="h-4 w-4" />
-                  {matchedField
-                    ? `Suggested: ${formatFieldName(matchedField)}`
-                    : 'Lawyer Information'}
+                  Select Lawyer
                 </Label>
-                {!showAllFields && lawyers.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAllFields(true)}
-                    className="text-xs"
-                  >
-                    Show All Fields
-                    <ChevronDown className="h-3 w-3 ml-1" />
-                  </Button>
-                )}
-                {showAllFields && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAllFields(false)}
-                    className="text-xs"
-                  >
-                    Hide
-                    <ChevronUp className="h-3 w-3 ml-1" />
-                  </Button>
-                )}
+                <Select value={selectedLawyerId} onValueChange={setSelectedLawyerId}>
+                  <SelectTrigger id="lawyer-select">
+                    <SelectValue placeholder="Choose a lawyer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lawyers.map((lawyer) => (
+                      <SelectItem key={lawyer.id} value={lawyer.id!}>
+                        {lawyer.name}
+                        {lawyer.lawfirm && (
+                          <span className="text-muted-foreground ml-2">
+                            • {lawyer.lawfirm}
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Smart matched options */}
-              {!showAllFields && lawyerOptions.length > 0 && (
-                <div className="max-h-[200px] overflow-y-auto space-y-1 border rounded-md p-2">
-                  {lawyerOptions.map((option) => (
+              {/* Show matched field or all fields */}
+              {selectedLawyer && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>
+                      {matchedField && !showAllFields
+                        ? `Suggested: ${formatFieldName(matchedField)}`
+                        : 'All Fields'}
+                    </Label>
+                    {matchedField && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAllFields(!showAllFields)}
+                        className="text-xs"
+                      >
+                        {showAllFields ? (
+                          <>
+                            Show Suggestion
+                            <ChevronUp className="h-3 w-3 ml-1" />
+                          </>
+                        ) : (
+                          <>
+                            Show All Fields
+                            <ChevronDown className="h-3 w-3 ml-1" />
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Smart matched field */}
+                  {!showAllFields && matchedField && matchedFieldValue && (
                     <button
-                      key={`${option.lawyerId}-${option.field}`}
-                      onClick={() => handleSelectOption(option)}
-                      className="w-full text-left px-3 py-2 rounded-md hover:bg-accent transition-colors"
+                      onClick={() => handleSelectOption({
+                        lawyerId: selectedLawyer.id!,
+                        field: matchedField,
+                        value: matchedFieldValue as string,
+                        lawyerName: selectedLawyer.name,
+                      })}
+                      className="w-full text-left px-4 py-3 rounded-md border bg-card hover:bg-accent transition-colors"
                     >
-                      <div className="font-medium text-sm">{option.value}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {option.lawyerName}
+                      <div className="text-xs text-muted-foreground mb-1">
+                        {formatFieldName(matchedField)}
                       </div>
+                      <div className="font-medium">{matchedFieldValue as string}</div>
                     </button>
-                  ))}
-                </div>
-              )}
+                  )}
 
-              {/* All fields view */}
-              {showAllFields && (
-                <div className="max-h-[300px] overflow-y-auto space-y-3 border rounded-md p-2">
-                  {lawyers.map((lawyer) => {
-                    const allOptions = getAllLawyerFieldOptions(lawyer)
-                    return (
-                      <div key={lawyer.id} className="space-y-1">
-                        <div className="font-medium text-sm px-2 py-1 bg-muted rounded">
-                          {lawyer.name}
-                        </div>
-                        {allOptions.map((option) => (
-                          <button
-                            key={`${option.lawyerId}-${option.field}`}
-                            onClick={() => handleSelectOption(option)}
-                            className="w-full text-left px-3 py-1.5 rounded-md hover:bg-accent transition-colors"
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-muted-foreground">
-                                {formatFieldName(option.field)}:
-                              </span>
-                              <span className="text-sm font-medium ml-2">
-                                {option.value}
-                              </span>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
+                  {/* No matched field value */}
+                  {!showAllFields && matchedField && !matchedFieldValue && (
+                    <div className="text-center py-4 text-sm text-muted-foreground border rounded-md">
+                      No {formatFieldName(matchedField).toLowerCase()} for this lawyer.
+                      <Button
+                        variant="link"
+                        size="sm"
+                        onClick={() => setShowAllFields(true)}
+                        className="ml-1"
+                      >
+                        Show all fields
+                      </Button>
+                    </div>
+                  )}
 
-              {!showAllFields && lawyerOptions.length === 0 && (
-                <div className="text-center py-4 text-sm text-muted-foreground border rounded-md">
-                  No matching lawyer data found.
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => setShowAllFields(true)}
-                    className="ml-1"
-                  >
-                    Show all fields
-                  </Button>
+                  {/* All fields view */}
+                  {(showAllFields || !matchedField) && (
+                    <div className="max-h-[250px] overflow-y-auto space-y-1 border rounded-md p-2">
+                      {getAllLawyerFieldOptions(selectedLawyer).map((option) => (
+                        <button
+                          key={`${option.lawyerId}-${option.field}`}
+                          onClick={() => handleSelectOption(option)}
+                          className="w-full text-left px-3 py-2 rounded-md hover:bg-accent transition-colors"
+                        >
+                          <div className="flex justify-between items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {formatFieldName(option.field)}:
+                            </span>
+                            <span className="text-sm font-medium truncate">
+                              {option.value}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
