@@ -25,7 +25,7 @@ import { useDocument } from "@/hooks/use-document";
 import { useGenerate } from "@/hooks/use-generate";
 import { ExportMenu } from "@/components/editor/ExportMenu";
 import { Sparkles, FileText, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DEFAULT_TONE_PROMPTS, type TonePreset } from "@/lib/templates/types";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase-client";
@@ -44,6 +44,7 @@ export function DraftTab({ docId }: DraftTabProps) {
   const { templates } = useTemplates(db);
   const [editedContent, setEditedContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Template selection for draft generation
   const [selectedTone, setSelectedTone] = useState<TonePreset | string>("professional");
@@ -54,11 +55,44 @@ export function DraftTab({ docId }: DraftTabProps) {
   const [templateName, setTemplateName] = useState("");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
+  // Auto-save timer ref
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (document?.content) {
       setEditedContent(document.content);
     }
   }, [document?.content]);
+
+  // Auto-save with debouncing
+  useEffect(() => {
+    if (!hasChanges || !editedContent) return;
+
+    // Clear existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    // Set new timer to auto-save after 1 second of inactivity
+    autoSaveTimerRef.current = setTimeout(async () => {
+      setIsSaving(true);
+      try {
+        await updateContent(editedContent);
+        setHasChanges(false);
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+        toast.error("Failed to auto-save changes");
+      } finally {
+        setIsSaving(false);
+      }
+    }, 1000);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [editedContent, hasChanges, updateContent]);
 
   const handleContentChange = (value: string) => {
     setEditedContent(value);
@@ -66,8 +100,16 @@ export function DraftTab({ docId }: DraftTabProps) {
   };
 
   const handleSave = async () => {
-    await updateContent(editedContent);
-    setHasChanges(false);
+    setIsSaving(true);
+    try {
+      await updateContent(editedContent);
+      setHasChanges(false);
+    } catch (error) {
+      console.error("Save failed:", error);
+      toast.error("Failed to save changes");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleGenerateDraft = async () => {
@@ -185,10 +227,16 @@ export function DraftTab({ docId }: DraftTabProps) {
               </CardDescription>
             </div>
             {content && (
-              <div className="flex gap-2">
-                {hasChanges && (
-                  <Button onClick={handleSave} variant="default">
-                    Save Changes
+              <div className="flex gap-2 items-center">
+                {isSaving && (
+                  <span className="text-sm text-muted-foreground">Saving...</span>
+                )}
+                {!isSaving && !hasChanges && (
+                  <span className="text-sm text-muted-foreground">Saved</span>
+                )}
+                {!isSaving && hasChanges && (
+                  <Button onClick={handleSave} variant="default" size="sm">
+                    Save Now
                   </Button>
                 )}
                 <ExportMenu docId={docId} />

@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Check, X, ChevronDown, ChevronUp, Briefcase } from 'lucide-react'
+import { Check, X, ChevronDown, ChevronUp, Briefcase, Calendar } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -56,6 +56,9 @@ export function PlaceholderDialog({
   // Smart match the placeholder to a field
   const matchedField = matchPlaceholderToField(placeholderText)
 
+  // Check if this is a date placeholder
+  const isDatePlaceholder = /date/i.test(placeholderText)
+
   // Get the selected lawyer
   const selectedLawyer = lawyers.find((l) => l.id === selectedLawyerId)
 
@@ -63,6 +66,21 @@ export function PlaceholderDialog({
   const matchedFieldValue = selectedLawyer && matchedField
     ? selectedLawyer[matchedField]
     : null
+
+  // Format today's date
+  const getTodaysDate = () => {
+    const today = new Date()
+    return today.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const handleUseTodaysDate = () => {
+    onUpdate(placeholderId, getTodaysDate())
+    onClose()
+  }
 
   useEffect(() => {
     if (open) {
@@ -112,6 +130,25 @@ export function PlaceholderDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          {/* Today's Date Section */}
+          {isDatePlaceholder && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Quick Date
+              </Label>
+              <button
+                onClick={handleUseTodaysDate}
+                className="w-full text-left px-4 py-3 rounded-md border bg-card hover:bg-accent transition-colors"
+              >
+                <div className="text-xs text-muted-foreground mb-1">
+                  Today's Date
+                </div>
+                <div className="font-medium">{getTodaysDate()}</div>
+              </button>
+            </div>
+          )}
+
           {/* Lawyer Selection Section */}
           {lawyers.length > 0 && (
             <div className="space-y-3">

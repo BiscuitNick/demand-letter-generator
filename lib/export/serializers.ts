@@ -96,18 +96,30 @@ export function parseHtmlToSections(html: string): DocumentSection[] {
           content: element.textContent || '',
         })
       } else if (tagName === 'p') {
-        const content = element.textContent?.trim()
-        // Check if this is a blank line marker
-        if (content === BLANK_LINE_MARKER) {
-          sections.push({
-            type: 'paragraph',
-            content: '', // Empty content for blank line
-          })
-        } else if (content) {
-          sections.push({
-            type: 'paragraph',
-            content,
-          })
+        // Handle <br> tags within paragraphs by splitting into separate lines
+        const innerHTML = element.innerHTML
+
+        // Split by <br> tags (case insensitive, with or without closing tag)
+        const lines = innerHTML.split(/<br\s*\/?>/i)
+
+        for (const line of lines) {
+          // Strip HTML tags and get text content
+          const tempDiv = dom.window.document.createElement('div')
+          tempDiv.innerHTML = line
+          const content = tempDiv.textContent?.trim() || ''
+
+          // Check if this is a blank line marker
+          if (content === BLANK_LINE_MARKER || content === '') {
+            sections.push({
+              type: 'paragraph',
+              content: '', // Empty content for blank line
+            })
+          } else {
+            sections.push({
+              type: 'paragraph',
+              content,
+            })
+          }
         }
       } else if (tagName === 'ul' || tagName === 'ol') {
         const items: string[] = []
