@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { DraftEditor } from "@/components/editor/DraftEditor";
 import {
   Select,
   SelectContent,
@@ -150,6 +151,14 @@ export function DraftTab({ docId }: DraftTabProps) {
       setIsSavingTemplate(false);
     }
   };
+
+  // Helper function to count words from HTML content
+  const getWordCount = (html: string): number => {
+    if (!html) return 0
+    // Strip HTML tags and count words
+    const text = html.replace(/<[^>]*>/g, ' ')
+    return text.split(/\s+/).filter(Boolean).length
+  }
 
   if (loading) {
     return (
@@ -338,11 +347,10 @@ export function DraftTab({ docId }: DraftTabProps) {
                 </div>
               </div>
 
-              <Textarea
-                value={editedContent}
-                onChange={(e) => handleContentChange(e.target.value)}
+              <DraftEditor
+                content={editedContent}
+                onChange={handleContentChange}
                 className="min-h-[500px] font-mono text-sm"
-                placeholder="Your demand letter will appear here..."
               />
 
               <div className="flex justify-between items-center">
@@ -353,7 +361,7 @@ export function DraftTab({ docId }: DraftTabProps) {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {editedContent.split(/\s+/).filter(Boolean).length} words
+                  {getWordCount(editedContent)} words
                 </p>
               </div>
             </div>
