@@ -92,32 +92,37 @@ export function DraftEditor({ content, onChange, className }: DraftEditorProps) 
     (id: string, newText: string) => {
       if (!editor) return
 
-      // Find and replace the placeholder text
+      // Find and replace ALL instances of the placeholder with the given ID
       const { doc } = editor.state
-      let found = false
+      const positions: Array<{ from: number; to: number }> = []
 
+      // Collect all positions of placeholders with this ID
       doc.descendants((node, pos) => {
-        if (found) return false
-
         if (node.isText) {
           node.marks.forEach((mark) => {
             if (mark.type.name === 'placeholderMark' && mark.attrs.id === id) {
-              // Replace the entire bracketed placeholder with just the new text
-              const from = pos
-              const to = pos + node.nodeSize
-
-              editor
-                .chain()
-                .focus()
-                .setTextSelection({ from, to })
-                .insertContent(newText)
-                .run()
-
-              found = true
+              positions.push({
+                from: pos,
+                to: pos + node.nodeSize,
+              })
             }
           })
         }
       })
+
+      // Replace all instances from back to front to maintain correct positions
+      if (positions.length > 0) {
+        const chain = editor.chain().focus()
+
+        // Sort positions in reverse order (from end to start) to maintain correct offsets
+        positions.sort((a, b) => b.from - a.from)
+
+        positions.forEach(({ from, to }) => {
+          chain.setTextSelection({ from, to }).insertContent(newText)
+        })
+
+        chain.run()
+      }
 
       setSelectedPlaceholder(null)
     },
@@ -193,24 +198,31 @@ function processContentWithPlaceholders(content: string): string {
   // Now wrap placeholders
   const placeholderRegex = /\[([^\]]+)\]/g
   let match
-  const replacements: Array<{ original: string; replacement: string }> = []
+  const replacementsMap = new Map<string, string>()
 
   // Reset regex lastIndex
   placeholderRegex.lastIndex = 0
 
+  // Collect all unique placeholders and assign them IDs
+  // All instances of the same placeholder text will share the same ID
   while ((match = placeholderRegex.exec(processedContent)) !== null) {
     const fullMatch = match[0]
     const innerText = match[1]
-    const id = `placeholder-${Math.random().toString(36).substr(2, 9)}`
 
-    const replacement = `<span data-type="placeholder" data-placeholder-id="${id}" data-placeholder-text="${innerText}" class="placeholder-mark">${fullMatch}</span>`
-
-    replacements.push({ original: fullMatch, replacement })
+    // Only create a replacement if we haven't seen this placeholder before
+    if (!replacementsMap.has(fullMatch)) {
+      const id = `placeholder-${Math.random().toString(36).substr(2, 9)}`
+      const replacement = `<span data-type="placeholder" data-placeholder-id="${id}" data-placeholder-text="${innerText}" class="placeholder-mark">${fullMatch}</span>`
+      replacementsMap.set(fullMatch, replacement)
+    }
   }
 
-  // Apply replacements (only first occurrence to avoid issues with duplicates)
-  replacements.forEach(({ original, replacement }) => {
-    processedContent = processedContent.replace(original, replacement)
+  // Apply replacements (replace all occurrences globally)
+  replacementsMap.forEach((replacement, original) => {
+    // Escape special regex characters in the original string
+    const escapedOriginal = original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    // Replace all occurrences globally
+    processedContent = processedContent.replace(new RegExp(escapedOriginal, 'g'), replacement)
   })
 
   return processedContent
